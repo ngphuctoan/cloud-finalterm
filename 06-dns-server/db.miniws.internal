@@ -1,0 +1,19 @@
+; All values are in seconds
+
+$TTL 3600 ; Time to live
+
+; Start of authority
+@   IN SOA ns1.miniws.internal. admin.miniws.internal. (
+  2026040101 ; Serial (in date format YYYYMMDD)
+  3600       ; Refresh
+  600        ; Retry
+  604800     ; Expire
+  3600       ; Min TTL
+)
+
+; NS (nameserver) records
+    IN NS ns1.miniws.internal.
+
+; A records
+ns1 IN A 172.237.0.2
+www IN A 172.237.0.3

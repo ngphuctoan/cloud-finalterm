@@ -1,0 +1,32 @@
+networks:
+  miniws-internal:
+    name: miniws-internal
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.237.0.0/16
+
+services:
+  frontend-server:
+    image: nginx:stable-alpine
+    networks:
+      miniws-internal:
+        ipv4_address: 172.237.0.3
+    ports:
+      - 8080:80
+    volumes:
+      - ./01-frontend-server/html:/var/www/html:ro,Z
+      - ./01-frontend-server/nginx.conf:/etc/nginx/nginx.conf:ro,Z
+    restart: unless-stopped
+
+  dns-server:
+    image: ubuntu/bind9:latest
+    networks:
+      miniws-internal:
+        ipv4_address: 172.237.0.2
+    ports:
+      - 30053:53/tcp
+      - 30053:53/udp
+    volumes:
+      - ./06-dns-server:/etc/bind:ro,Z
+    restart: unless-stopped
