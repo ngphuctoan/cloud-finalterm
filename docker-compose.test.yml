@@ -19,6 +19,18 @@ services:
       - ./01-frontend-server/nginx.conf:/etc/nginx/nginx.conf:ro,Z
     restart: unless-stopped
 
+  frontend-metrics-server:
+    image: nginx/nginx-prometheus-exporter:latest
+    networks:
+      - miniws-internal
+    ports:
+      - 9113:9113
+    environments:
+      - NGINX_SCRAPE_URI=http://frontend-server/stub_status
+    depends_on:
+      - frontend-server
+    restart: unless-stopped
+
   dns-server:
     image: ubuntu/bind9:latest
     networks:
@@ -29,4 +41,27 @@ services:
       - 30053:53/udp
     volumes:
       - ./06-dns-server:/etc/bind:ro,Z
+    depends_on:
+      - frontend-server
+    restart: unless-stopped
+
+  node-exporter-server:
+    image: prom/node-exporter:latest
+    networks:
+      - miniws-internal
+    ports:
+      - 9100:9100
+    restart: unless-stopped
+
+  prometheus-server:
+    image: prom/prometheus:latest
+    networks:
+      - miniws-internal
+    ports:
+      - 9090:9090
+    volumes:
+      - ./07-prometheus-server/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
+    depends_on:
+      - node-exporter-server
+      - frontend-metrics-server
     restart: unless-stopped
