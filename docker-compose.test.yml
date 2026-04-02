@@ -65,3 +65,13 @@ services:
       - node-exporter-server
       - frontend-metrics-server
     restart: unless-stopped
+
+  grafana-dashboard:
+    image: grafana/grafana:latest
+    networks:
+      - miniws-internal
+    ports:
+      - 3333:3000
+    depends_on:
+      - prometheus-server
+    restart: unless-stopped
