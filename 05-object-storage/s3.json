@@ -1,0 +1,24 @@
+{
+  "identities": [
+    {
+      "name": "admin_user",
+      "credentials": [
+        {
+          "accessKey": "admin",
+          "secretKey": "miniws"
+        }
+      ],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    },
+    {
+      "name": "anonymous",
+      "credentials": [
+        {
+          "accessKey": "guest",
+          "secretKey": "123456"
+        }
+      ],
+      "actions": ["Read:public"]
+    }
+  ]
+}

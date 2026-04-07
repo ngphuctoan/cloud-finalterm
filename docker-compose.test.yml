@@ -31,6 +31,27 @@ services:
       - frontend-server
     restart: unless-stopped
 
+  object-storage:
+    image: chrislusf/seaweedfs
+    command: server -dir=/data -s3 -s3.config=/etc/seaweedfs/s3.json
+    networks:
+      - miniws-internal
+    ports:
+      - 8333:8333
+    volumes:
+      - ./05-object-storage/data:/data:rw,Z
+      - ./05-object-storage/s3.json:/etc/seaweedfs/s3.json:ro,Z
+    restart: unless-stopped
+
+  seaweedfs-admin:
+    image: chrislusf/seaweedfs
+    command: admin -masters=object-storage:9333
+    ports:
+      - 23646:23646
+    depends_on:
+      - object-storage
+    restart: unless-stopped
+
   dns-server:
     image: ubuntu/bind9:latest
     networks:
@@ -74,4 +95,14 @@ services:
       - 3333:3000
     depends_on:
       - prometheus-server
+    restart: unless-stopped
+
+  reverse-proxy:
+    image: nginx:stable-alpine
+    networks:
+      - miniws-internal
+    ports:
+      - 8000:80
+    volumes:
+      - ./09-reverse-proxy/nginx.conf:/etc/nginx/nginx.conf:ro,Z
     restart: unless-stopped
