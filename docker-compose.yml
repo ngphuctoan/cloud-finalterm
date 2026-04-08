@@ -1,0 +1,21 @@
+networks:
+  keepbin-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.237.0.0/16
+
+services:
+  db:
+    image: postgres
+    networks:
+      keepbin-net:
+        ipv4_address: 172.237.0.5
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASS}
+    volumes:
+      - ./03-db/postgresql:/var/lib/postgresql:rw,Z
+      - ./03-db/migrations:/docker-entrypoint-initdb.d:ro,Z
+    restart: unless-stopped

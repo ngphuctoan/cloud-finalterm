@@ -1,0 +1,4 @@
+.env
+**/node_modules
+02-backend/drizzle
+03-db/postgresql
