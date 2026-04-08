@@ -7,100 +7,124 @@ networks:
         - subnet: 172.237.0.0/16
 
 services:
-  web-frontend-server:
+  frontend-server:
     build: ./01-frontend-server
-    image: hotensv/web:dev
-    container_name: web-frontend-server
-    networks: [miniws-internal]
-    ports: ["8080:80"]
-
-  application-backend-server:
-    build: ./application-backend-server
-    image: hotensv/app:dev
-    container_name: application-backend-server
-    networks: [miniws-internal]
-    ports: ["8085:8081"]
-    environment:
-      OIDC_ISSUER: "http://authentication-identity-server:8080/realms/master"
-      OIDC_AUDIENCE: "myapp"
-
-  relational-database-server:
-    image: mariadb:11
-    container_name: relational-database-server
-    environment:
-      MARIADB_ROOT_PASSWORD: root
-      MARIADB_DATABASE: minicloud
+    networks:
+      miniws-internal:
+        ipv4_address: 172.237.0.3
+    ports:
+      - 8080:80
     volumes:
-      - ./relational-database-server/init:/docker-entrypoint-initdb.d:ro
-    ports: ["3306:3306"]
-    networks: [miniws-internal]
-
-  authentication-identity-server:
-    image: quay.io/keycloak/keycloak:latest
-    container_name: authentication-identity-server
-    command: ["start-dev"]
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_HOSTNAME: "localhost"
-      KC_HOSTNAME_STRICT: "false"
-      KC_HTTP_ENABLED: "true"
-    ports: ["8081:8080"]
+      - ./01-frontend-server/nginx.conf:/etc/nginx/nginx.conf:ro,Z
     restart: unless-stopped
-    networks: [miniws-internal]
 
-  object-storage-server:
-    image: minio/minio
-    container_name: object-storage-server
-    command: ["server", "/data", "--console-address", ":9001"]
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    volumes:
-      - ./object-storage-server/data:/data
-    ports: ["9000:9000", "9001:9001"]
-    networks: [miniws-internal]
-
-  # internal-dns-server:
-  #   image: internetsystemsconsortium/bind9:9.18
-  #   container_name: internal-dns-server
-  #   ports: ["1053:53/udp"]
-  #   volumes:
-  #     - ./internal-dns-server/named.conf:/etc/bind/named.conf:ro
-  #     - ./internal-dns-server/named.conf.options:/etc/bind/named.conf.options:ro
-  #     - ./internal-dns-server/named.conf.local:/etc/bind/named.conf.local:ro
-  #     - ./internal-dns-server/db.cloud.local:/etc/bind/db.cloud.local:ro
-  #   networks: [miniws-internal]
-
-  monitoring-node-exporter-server:
-    image: prom/node-exporter:latest
-    container_name: monitoring-node-exporter-server
-    ports: ["9100:9100"]
-    networks: [miniws-internal]
-
-  monitoring-prometheus-server:
-    image: prom/prometheus:latest
-    container_name: monitoring-prometheus-server
-    ports: ["9090:9090"]
-    volumes:
-      - ./monitoring-prometheus-server/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    networks: [miniws-internal]
-
-  monitoring-grafana-dashboard-server:
-    image: grafana/grafana:latest
-    container_name: monitoring-grafana-dashboard-server
-    ports: ["3000:3000"]
-    networks: [miniws-internal]
-
-  api-gateway-proxy-server:
-    image: nginx:stable
-    container_name: api-gateway-proxy-server
+  frontend-metrics-server:
+    image: nginx/nginx-prometheus-exporter:latest
+    networks:
+      - miniws-internal
+    ports:
+      - 9113:9113
+    environments:
+      - NGINX_SCRAPE_URI=http://frontend-server/stub_status
     depends_on:
-      - web-frontend-server
-      - application-backend-server
-      - authentication-identity-server
-    ports: ["80:80"]
+      - frontend-server
+    restart: unless-stopped
+
+  relational-database:
+    image: postgres:latest
+    networks:
+      - miniws-internal
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=miniws
+      - POSTGRES_DB=miniwsdb
     volumes:
-      - ./api-gateway-proxy-server/nginx.conf:/etc/nginx/nginx.conf:ro
-    networks: [miniws-internal]
+      - ./03-relational-database/migrations:/docker-entrypoint-initdb.d:ro,Z
+    restart: unless-stopped
+
+  backend-server:
+    build: ./02-backend-server
+    networks:
+      - miniws-internal
+    ports:
+      - 8081:8000
+    depends_on:
+      - relational-database
+    restart: unless-stopped
+
+  object-storage:
+    image: chrislusf/seaweedfs
+    command: server -dir=/data -s3 -s3.config=/etc/seaweedfs/s3.json
+    networks:
+      - miniws-internal
+    ports:
+      - 8333:8333
+    volumes:
+      - ./05-object-storage/data:/data:rw,Z
+      - ./05-object-storage/s3.json:/etc/seaweedfs/s3.json:ro,Z
+    restart: unless-stopped
+
+  seaweedfs-admin:
+    image: chrislusf/seaweedfs
+    command: admin -masters=object-storage:9333
+    ports:
+      - 23646:23646
+    depends_on:
+      - object-storage
+    restart: unless-stopped
+
+  dns-server:
+    image: ubuntu/bind9:latest
+    networks:
+      miniws-internal:
+        ipv4_address: 172.237.0.2
+    ports:
+      - 30053:53/tcp
+      - 30053:53/udp
+    volumes:
+      - ./06-dns-server:/etc/bind:ro,Z
+    depends_on:
+      - frontend-server
+    restart: unless-stopped
+
+  node-exporter-server:
+    image: prom/node-exporter:latest
+    networks:
+      - miniws-internal
+    ports:
+      - 9100:9100
+    restart: unless-stopped
+
+  prometheus-server:
+    image: prom/prometheus:latest
+    networks:
+      - miniws-internal
+    ports:
+      - 9090:9090
+    volumes:
+      - ./07-prometheus-server/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
+    depends_on:
+      - node-exporter-server
+      - frontend-metrics-server
+    restart: unless-stopped
+
+  grafana-dashboard:
+    image: grafana/grafana:latest
+    networks:
+      - miniws-internal
+    ports:
+      - 3333:3000
+    depends_on:
+      - prometheus-server
+    restart: unless-stopped
+
+  reverse-proxy:
+    image: nginx:stable-alpine
+    networks:
+      - miniws-internal
+    ports:
+      - 8000:80
+    volumes:
+      - ./09-reverse-proxy/nginx.conf:/etc/nginx/nginx.conf:ro,Z
     restart: unless-stopped

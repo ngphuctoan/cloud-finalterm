@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Danh sách sinh viên</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body>
+    <main class="container my-4">
+      <h1 class="mb-4">Danh sách sinh viên</h1>
+      <table class="table">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">MSSV</th>
+            <th scope="col">Họ tên</th>
+            <th scope="col">Khoa</th>
+            <th scope="col">Ngành</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for student in students %}
+          <tr>
+            <th scope="row">{{ student.student_id }}</th>
+            <td>{{ student.full_name }}</td>
+            <td>{{ student.department }}</td>
+            <td>{{ student.major }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </main>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>
