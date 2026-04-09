@@ -12,7 +12,7 @@ export const getFolders = async <T extends ContentType>(parentId?: number) => {
 
 export const createFolder = async (data: {
   name: string;
-  parentId: number | null;
+  parentId?: number;
 }) => {
   const res = await fetch("http://localhost:3000/v1/folders", {
     method: "POST",
@@ -27,6 +27,21 @@ export const createFolder = async (data: {
 export const deleteFolder = async (id: number) => {
   const res = await fetch(`http://localhost:3000/v1/folders/${id}`, {
     method: "DELETE",
+  });
+  if (!res.ok) {
+    throw new Error("Something went wrong");
+  }
+};
+
+export const uploadFile = async (data: { file: File; folderId?: number }) => {
+  const formData = new FormData();
+  formData.append("file", data.file);
+  if (data.folderId) {
+    formData.append("folderId", data.folderId.toString());
+  }
+  const res = await fetch("http://localhost:3000/v1/files", {
+    method: "POST",
+    body: formData,
   });
   if (!res.ok) {
     throw new Error("Something went wrong");

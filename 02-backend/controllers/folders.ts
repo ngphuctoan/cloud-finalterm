@@ -4,6 +4,8 @@ import db from "../db";
 import CreateFolderDto from "../dtos/create-folder";
 import { filesTable, foldersTable } from "../db/schema";
 import { eq, isNull, sql } from "drizzle-orm";
+import s3, { BUCKET } from "../utils/s3";
+import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 
 const foldersController = express.Router();
 
@@ -67,9 +69,26 @@ foldersController.post("/", async (req, res) => {
 
 foldersController.delete("/:id", async (req, res) => {
   const { id } = req.params;
-  const folder = await db
-    .delete(foldersTable)
-    .where(eq(foldersTable.id, Number(id)));
+  const files = await db
+    .select({ bucketKey: filesTable.bucketKey })
+    .from(filesTable)
+    .where(eq(filesTable.folderId, Number(id)));
+  await s3.send(
+    new DeleteObjectsCommand({
+      Bucket: BUCKET,
+      Delete: {
+        Objects: files.map((file) => ({
+          Key: file.bucketKey,
+        })),
+      },
+    }),
+  );
+  const folder = (
+    await db
+      .delete(foldersTable)
+      .where(eq(foldersTable.id, Number(id)))
+      .returning()
+  )[0];
   return res.json(folder);
 });
 

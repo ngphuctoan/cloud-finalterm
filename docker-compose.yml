@@ -19,3 +19,29 @@ services:
       - ./03-db/postgresql:/var/lib/postgresql:rw,Z
       - ./03-db/migrations:/docker-entrypoint-initdb.d:ro,Z
     restart: unless-stopped
+
+  s3:
+    image: chrislusf/seaweedfs
+    command: server -dir=/data -s3
+    networks:
+      keepbin-net:
+        ipv4_address: 172.237.0.7
+    ports:
+      - 8333:8333
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=${S3_SECRET}
+    volumes:
+      - ./05-s3/data:/data:rw,Z
+    restart: unless-stopped
+
+  seaweedfs-admin:
+    image: chrislusf/seaweedfs
+    command: admin -adminUser=admin -adminPassword=${SEAWEEDFS_ADMIN_PASS} -masters=s3:9333
+    networks:
+      - keepbin-net
+    ports:
+      - 23646:23646
+    depends_on:
+      - s3
+    restart: unless-stopped

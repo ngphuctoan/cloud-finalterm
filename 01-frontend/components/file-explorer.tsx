@@ -10,6 +10,7 @@ import { FaFolder } from "react-icons/fa6";
 import SearchBar from "./search-bar";
 import { Content, ContentType } from "@/types/content";
 import FolderActions from "./folder-actions";
+import toFileSizeFormat from "@/utils/file-size";
 
 function ContentsTable<T extends ContentType>({
   contents,
@@ -59,7 +60,11 @@ function ContentsTable<T extends ContentType>({
                 )}
               </td>
               <td>
-                {content.type === "folder" ? <>&ndash;</> : content.sizeBytes}
+                {content.type === "folder" ? (
+                  <>&ndash;</>
+                ) : (
+                  toFileSizeFormat(content.sizeBytes)
+                )}
               </td>
               <td>{dayjs(content.createdAt).format("YYYY-MM-DD HH:mm:ss")}</td>
               <td>
@@ -99,7 +104,7 @@ export default function FileExplorer({ parentId }: { parentId?: number }) {
   return (
     <div className="vstack gap-3">
       <SearchBar folderName={data?.name} />
-      <FolderActions />
+      <FolderActions folderId={parentId} />
       <ContentsTable
         contents={data?.contents}
         isLoading={isPending}
