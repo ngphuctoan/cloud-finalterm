@@ -78,6 +78,27 @@ foldersController.get("/{:id}", async (req, res) => {
   });
 });
 
+foldersController.get("/:id/breadcrumb", async (req, res) => {
+  const { id } = req.params;
+
+  const rawQuery = sql`
+    WITH RECURSIVE folders_breadcrumb AS (
+      SELECT folders_1.id, folders_1.name, folders_1.parent_id
+      FROM folders folders_1
+      WHERE folders_1.id = ${id}
+      UNION ALL
+      SELECT folders_2.id, folders_2.name, folders_2.parent_id
+      FROM folders folders_2
+      JOIN folders_breadcrumb ON folders_2.id = folders_breadcrumb.parent_id
+    )
+    SELECT id, name FROM folders_breadcrumb;
+  `;
+
+  const { rows: breadcrumb } = await db.execute(rawQuery);
+
+  return res.json(breadcrumb.reverse());
+});
+
 foldersController.post("/", parseDto(CreateFolderDto), async (req, res) => {
   const folder = await db
     .insert(foldersTable)

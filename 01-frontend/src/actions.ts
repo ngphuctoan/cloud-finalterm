@@ -31,6 +31,16 @@ export const getContentsOfFolder = <T extends ExplorerEntryType>(
         },
     );
 
+export const getFolderBreadcrumb = (rootFolderId?: number) => {
+  if (!rootFolderId) {
+    return [];
+  }
+
+  return fetch(`${BASE_URL}/folders/${rootFolderId}/breadcrumb`)
+    .then((res) => res.json())
+    .then((data) => data as { id: string; name: string }[]);
+};
+
 export const createFolder = (data: FormData) =>
   fetch(`${BASE_URL}/folders`, {
     method: "POST",

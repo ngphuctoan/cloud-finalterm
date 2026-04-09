@@ -7,6 +7,7 @@ import FileExplorer from "./components/FileExplorer";
 import { useParams } from "react-router";
 import RootFolderContext from "./contexts/RootFolderContext";
 import FolderActions from "./components/FolderActions";
+import ExplorerBreadcrumb from "./components/ExplorerBreadcrumb";
 
 export default function App() {
   const { rootFolderId } = useParams<{ rootFolderId?: string }>();
@@ -26,6 +27,7 @@ export default function App() {
         <RootFolderContext.Provider
           value={rootFolderId ? Number(rootFolderId) : null}
         >
+          <ExplorerBreadcrumb />
           <FolderActions />
           <FileExplorer />
         </RootFolderContext.Provider>
