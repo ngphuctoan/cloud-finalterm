@@ -1,34 +1,41 @@
-import express from "express";
-import * as v from "valibot";
-import db from "../db";
-import CreateFolderDto from "../dtos/create-folder";
-import { filesTable, foldersTable } from "../db/schema";
-import { eq, isNull, sql } from "drizzle-orm";
-import s3, { BUCKET } from "../utils/s3";
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
+import { eq, isNull, sql } from "drizzle-orm";
+import express from "express";
+import { match } from "ts-pattern";
+import db from "../db";
+import { filesTable, foldersTable } from "../db/schema";
+import CreateFolderDto from "../dtos/create-folder";
+import parseDto from "../middlewares/parse-dto";
+import s3, { BUCKET } from "../utils/s3";
 
 const foldersController = express.Router();
 
 foldersController.get("/{:id}", async (req, res) => {
   const { id } = req.params;
-  const folder = id
-    ? (
-        await db
-          .select({
-            type: sql<string>`'folder'`,
-            id: foldersTable.id,
-            name: foldersTable.name,
-            createdAt: foldersTable.createdAt,
-          })
-          .from(foldersTable)
-          .where(eq(foldersTable.id, Number(id)))
-      )[0]
-    : {
+
+  const rootFolder = await match(id)
+    .when(
+      (id) => id === undefined,
+      () => ({
         type: "folder",
         id: 0,
         name: "/",
         createdAt: null,
-      };
+      }),
+    )
+    .otherwise(async () =>
+      db
+        .select({
+          type: sql<string>`'folder'`,
+          id: foldersTable.id,
+          name: foldersTable.name,
+          createdAt: foldersTable.createdAt,
+        })
+        .from(foldersTable)
+        .where(eq(foldersTable.id, Number(id)))
+        .then((result) => result[0]),
+    );
+
   const folders = await db
     .select({
       type: sql<string>`'folder'`,
@@ -38,10 +45,14 @@ foldersController.get("/{:id}", async (req, res) => {
     })
     .from(foldersTable)
     .where(
-      id
-        ? eq(foldersTable.parentId, Number(id))
-        : isNull(foldersTable.parentId),
+      match(id)
+        .when(
+          (id) => id === undefined,
+          () => isNull(foldersTable.parentId),
+        )
+        .otherwise(() => eq(foldersTable.parentId, Number(id))),
     );
+
   const files = await db
     .select({
       type: sql<string>`'file'`,
@@ -53,43 +64,52 @@ foldersController.get("/{:id}", async (req, res) => {
     })
     .from(filesTable)
     .where(
-      id ? eq(filesTable.folderId, Number(id)) : isNull(filesTable.folderId),
+      match(id)
+        .when(
+          (id) => id === undefined,
+          () => isNull(filesTable.folderId),
+        )
+        .otherwise(() => eq(filesTable.folderId, Number(id))),
     );
+
   return res.json({
-    ...folder,
+    ...rootFolder,
     contents: [...folders, ...files],
   });
 });
 
-foldersController.post("/", async (req, res) => {
-  const createFolder = v.parse(CreateFolderDto, req.body);
-  const folder = await db.insert(foldersTable).values(createFolder);
+foldersController.post("/", parseDto(CreateFolderDto), async (req, res) => {
+  const folder = await db.insert(foldersTable).values(req.body);
   return res.json(folder);
 });
 
 foldersController.delete("/:id", async (req, res) => {
   const { id } = req.params;
-  const files = await db
-    .select({ bucketKey: filesTable.bucketKey })
+
+  const filesToDelete = await db
+    .select({
+      bucketKey: filesTable.bucketKey,
+    })
     .from(filesTable)
     .where(eq(filesTable.folderId, Number(id)));
+
   await s3.send(
     new DeleteObjectsCommand({
       Bucket: BUCKET,
       Delete: {
-        Objects: files.map((file) => ({
+        Objects: filesToDelete.map((file) => ({
           Key: file.bucketKey,
         })),
       },
     }),
   );
-  const folder = (
-    await db
-      .delete(foldersTable)
-      .where(eq(foldersTable.id, Number(id)))
-      .returning()
-  )[0];
-  return res.json(folder);
+
+  const folder = await db
+    .delete(foldersTable)
+    .where(eq(foldersTable.id, Number(id)))
+    .returning();
+
+  return res.json(folder[0]);
 });
 
 export default foldersController;
