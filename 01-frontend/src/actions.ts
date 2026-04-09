@@ -1,0 +1,56 @@
+import type { Auth, ExplorerEntry, ExplorerEntryType } from "./types";
+
+export const BASE_URL = "http://localhost:3000";
+
+export const checkAuth = () =>
+  fetch(`${BASE_URL}/auth/check`, {
+    credentials: "include",
+  })
+    .then((res) => res.json())
+    .then((data) => data as Auth);
+
+export const logout = () =>
+  fetch(`${BASE_URL}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  })
+    .then((res) => res.json())
+    .then((data) => data as { url: string });
+
+export const getContentsOfFolder = <T extends ExplorerEntryType>(
+  rootFolderId?: number,
+) =>
+  fetch(`${BASE_URL}/folders/${rootFolderId || ""}`, {
+    credentials: "include",
+  })
+    .then((res) => res.json())
+    .then(
+      (data) =>
+        data as ExplorerEntry<"folder"> & {
+          contents: ExplorerEntry<T>[];
+        },
+    );
+
+export const createFolder = (data: FormData) =>
+  fetch(`${BASE_URL}/folders`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: data.get("name"),
+      parentId: data.get("parentId"),
+    }),
+    credentials: "include",
+  })
+    .then((res) => res.json())
+    .then((data) => data as ExplorerEntry<"folder">);
+
+export const uploadFile = (data: FormData) =>
+  fetch(`${BASE_URL}/files`, {
+    method: "POST",
+    body: data,
+    credentials: "include",
+  })
+    .then((res) => res.json())
+    .then((data) => data as ExplorerEntry<"file">);

@@ -79,8 +79,16 @@ foldersController.get("/{:id}", async (req, res) => {
 });
 
 foldersController.post("/", parseDto(CreateFolderDto), async (req, res) => {
-  const folder = await db.insert(foldersTable).values(req.body);
-  return res.json(folder);
+  const folder = await db
+    .insert(foldersTable)
+    .values(req.body)
+    .returning({
+      type: sql<string>`'folder'`,
+      id: foldersTable.id,
+      name: foldersTable.name,
+      createdAt: foldersTable.createdAt,
+    });
+  return res.json(folder[0]);
 });
 
 foldersController.delete("/:id", async (req, res) => {
@@ -107,7 +115,12 @@ foldersController.delete("/:id", async (req, res) => {
   const folder = await db
     .delete(foldersTable)
     .where(eq(foldersTable.id, Number(id)))
-    .returning();
+    .returning({
+      type: sql<string>`'folder'`,
+      id: foldersTable.id,
+      name: foldersTable.name,
+      createdAt: foldersTable.createdAt,
+    });
 
   return res.json(folder[0]);
 });

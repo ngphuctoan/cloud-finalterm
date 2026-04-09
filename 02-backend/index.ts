@@ -1,34 +1,45 @@
+import { RedisStore } from "connect-redis";
 import cors from "cors";
 import express from "express";
-import { auth, ConfigParams } from "express-openid-connect";
+import session from "express-session";
+import passport from "passport";
+import { createClient } from "redis";
 import authController from "./controllers/auth";
 import filesController from "./controllers/files";
 import foldersController from "./controllers/folders";
-import checkAuth from "./middlewares/check-auth";
 
 const app = express();
-app.use(cors());
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const config: ConfigParams = {
-  issuerBaseURL: process.env.ISSUER_BASE_URL,
-  baseURL: process.env.BASE_URL,
-  clientID: process.env.CLIENT_ID,
-  secret: process.env.SECRET,
-  authRequired: false,
-  idpLogout: true,
-  routes: {
-    login: false,
-    postLogoutRedirect: "/auth/check",
-    callback: "/auth/callback",
-  },
-};
-app.use(auth(config));
+const redisClient = createClient();
+redisClient.connect().catch(console.error);
+
+const redisStore = new RedisStore({
+  client: redisClient,
+  prefix: "keepbin:",
+});
+
+app.use(
+  session({
+    store: redisStore,
+    resave: false,
+    saveUninitialized: false,
+    secret: process.env.SESSION_SECRET!,
+  }),
+);
+app.use(passport.authenticate("session"));
 
 app.use("/auth", authController);
-app.use("/folders", checkAuth, foldersController);
-app.use("/files", checkAuth, filesController);
+app.use("/folders", foldersController);
+app.use("/files", filesController);
 
 const PORT = 3000;
 app.listen(PORT, async () => {

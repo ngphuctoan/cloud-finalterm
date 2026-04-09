@@ -51,4 +51,14 @@ services:
     environment:
       - KC_BOOTSTRAP_ADMIN_USERNAME=admin
       - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_PASS}
+    volumes:
+      - ./04-auth/keycloak:/opt/keycloak/data/h2:rw,Z
+    restart: unless-stopped
+
+  session:
+    image: valkey/valkey
+    networks:
+      - keepbin-net
+    ports:
+      - 6379:6379
     restart: unless-stopped

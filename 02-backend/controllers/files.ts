@@ -9,13 +9,14 @@ import upload from "../utils/multer";
 import s3, { BUCKET } from "../utils/s3";
 import parseDto from "../middlewares/parse-dto";
 import UploadFileDto from "../dtos/upload-file";
+import { sql } from "drizzle-orm";
 
 const filesController = express.Router();
 
 filesController.post(
   "/",
-  parseDto(UploadFileDto),
   upload.single("file"),
+  parseDto(UploadFileDto),
   async (req, res) => {
     const { folderId } = req.body;
 
@@ -43,7 +44,14 @@ filesController.post(
         bucketKey: `${key}${ext}`,
         folderId: folderId ? Number(folderId) : undefined,
       })
-      .returning();
+      .returning({
+        type: sql<string>`'file'`,
+        id: filesTable.id,
+        name: filesTable.name,
+        sizeBytes: filesTable.sizeBytes,
+        bucketKey: filesTable.bucketKey,
+        createdAt: filesTable.createdAt,
+      });
 
     return res.json(resultingFile[0]);
   },
