@@ -1,14 +1,16 @@
 import { useContext, type SubmitEvent } from "react";
 import RootFolderContext from "../contexts/RootFolderContext";
-import { Button, Form, Modal } from "react-bootstrap";
+import { Button, Form, Modal, Spinner } from "react-bootstrap";
 
 export default function UploadFileModal({
   show,
   onHide,
+  isLoading,
   onUploadFile,
 }: {
   show: boolean;
   onHide: () => void;
+  isLoading?: boolean;
   onUploadFile: (formData: FormData) => void;
 }) {
   const rootFolderId = useContext(RootFolderContext);
@@ -25,7 +27,7 @@ export default function UploadFileModal({
   };
 
   return (
-    <Modal show={show} onHide={onHide}>
+    <Modal show={show} onHide={onHide} centered>
       <Modal.Header closeButton>
         <Modal.Title>Tải tệp tin</Modal.Title>
       </Modal.Header>
@@ -38,7 +40,7 @@ export default function UploadFileModal({
         </Modal.Body>
         <Modal.Footer>
           <Button type="submit" variant="primary">
-            Lưu
+            <Spinner hidden={!isLoading} size="sm" /> Lưu
           </Button>
         </Modal.Footer>
       </Form>

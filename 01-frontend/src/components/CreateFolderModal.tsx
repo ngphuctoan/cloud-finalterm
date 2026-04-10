@@ -1,14 +1,16 @@
 import { useContext, type SubmitEvent } from "react";
 import RootFolderContext from "../contexts/RootFolderContext";
-import { Button, Form, Modal } from "react-bootstrap";
+import { Button, Form, Modal, Spinner } from "react-bootstrap";
 
 export default function CreateFolderModal({
   show,
   onHide,
+  isLoading,
   onCreateFolder,
 }: {
   show: boolean;
   onHide: () => void;
+  isLoading?: boolean;
   onCreateFolder: (formData: FormData) => void;
 }) {
   const rootFolderId = useContext(RootFolderContext);
@@ -25,7 +27,7 @@ export default function CreateFolderModal({
   };
 
   return (
-    <Modal show={show} onHide={onHide}>
+    <Modal show={show} onHide={onHide} centered>
       <Modal.Header closeButton>
         <Modal.Title>Tạo thư mục</Modal.Title>
       </Modal.Header>
@@ -33,12 +35,12 @@ export default function CreateFolderModal({
         <Modal.Body>
           <Form.Group>
             <Form.Label>Nhập tên thư mục cần tạo:</Form.Label>
-            <Form.Control name="name" />
+            <Form.Control name="name" autoFocus />
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button type="submit" variant="primary">
-            Lưu
+          <Button type="submit" variant="primary" disabled={isLoading}>
+            <Spinner hidden={!isLoading} size="sm" /> Lưu
           </Button>
         </Modal.Footer>
       </Form>

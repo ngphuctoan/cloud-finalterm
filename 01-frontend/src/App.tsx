@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { Container } from "react-bootstrap";
+import { Container, Stack } from "react-bootstrap";
 import { BASE_URL, checkAuth } from "./actions";
 import AppHeader from "./components/AppHeader";
 import UserContext from "./contexts/UserContext";
 import FileExplorer from "./components/FileExplorer";
 import { useParams } from "react-router";
 import RootFolderContext from "./contexts/RootFolderContext";
-import FolderActions from "./components/FolderActions";
+import RootFolderActions from "./components/RootFolderActions";
 import ExplorerBreadcrumb from "./components/ExplorerBreadcrumb";
 import { useEffect } from "react";
 
@@ -27,15 +27,17 @@ export default function App() {
   return (
     <UserContext.Provider value={data?.user || null}>
       <AppHeader />
-      <Container>
-        <RootFolderContext.Provider
-          value={rootFolderId ? Number(rootFolderId) : null}
-        >
-          <ExplorerBreadcrumb />
-          <FolderActions />
-          <FileExplorer />
-        </RootFolderContext.Provider>
-      </Container>
+      <RootFolderContext.Provider
+        value={rootFolderId ? Number(rootFolderId) : null}
+      >
+        <Container>
+          <Stack gap={4}>
+            <ExplorerBreadcrumb />
+            <RootFolderActions />
+            <FileExplorer />
+          </Stack>
+        </Container>
+      </RootFolderContext.Provider>
     </UserContext.Provider>
   );
 }

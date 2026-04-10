@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, type CSSProperties } from "react";
 import RootFolderContext from "../contexts/RootFolderContext";
 import { Breadcrumb } from "react-bootstrap";
 import { FaHome } from "react-icons/fa";
@@ -15,7 +15,15 @@ export default function ExplorerBreadcrumb() {
   });
 
   return (
-    <Breadcrumb>
+    <Breadcrumb
+      listProps={{
+        style: {
+          "--bs-breadcrumb-padding-x": 0,
+          "--bs-breadcrumb-padding-y": 0,
+          "--bs-breadcrumb-margin-bottom": 0,
+        } as CSSProperties,
+      }}
+    >
       <Breadcrumb.Item
         linkAs={Link}
         linkProps={{ to: "/" }}
@@ -23,8 +31,9 @@ export default function ExplorerBreadcrumb() {
       >
         <FaHome />
       </Breadcrumb.Item>
-      {data?.map((breadcrumb) => (
+      {data?.map((breadcrumb, i) => (
         <Breadcrumb.Item
+          key={i}
           linkAs={Link}
           linkProps={{ to: `/${breadcrumb.id}` }}
           active={rootFolderId === breadcrumb.id}

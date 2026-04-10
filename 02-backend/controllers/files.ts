@@ -1,4 +1,4 @@
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import express from "express";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
@@ -9,7 +9,7 @@ import upload from "../utils/multer";
 import s3, { BUCKET } from "../utils/s3";
 import parseDto from "../middlewares/parse-dto";
 import UploadFileDto from "../dtos/upload-file";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 const filesController = express.Router();
 
@@ -39,7 +39,16 @@ filesController.post(
     const resultingFile = await db
       .insert(filesTable)
       .values({
-        name: `${normalizedFileName}${ext}`,
+        name: sql`(
+          SELECT ${normalizedFileName} || CASE
+            WHEN COUNT(*) = 0 THEN ''
+            ELSE ' (' || COUNT(*) || ')'
+          END || ${ext}
+          FROM files
+          WHERE name LIKE ${normalizedFileName} || '%'
+          AND folder_id = ${folderId}
+        )`,
+        mimeType: file.mimetype,
         sizeBytes: file.size,
         bucketKey: `${key}${ext}`,
         folderId: folderId ? Number(folderId) : undefined,
@@ -48,6 +57,7 @@ filesController.post(
         type: sql<string>`'file'`,
         id: filesTable.id,
         name: filesTable.name,
+        mimeType: filesTable.mimeType,
         sizeBytes: filesTable.sizeBytes,
         bucketKey: filesTable.bucketKey,
         createdAt: filesTable.createdAt,
@@ -56,5 +66,31 @@ filesController.post(
     return res.json(resultingFile[0]);
   },
 );
+
+filesController.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  const file = await db
+    .delete(filesTable)
+    .where(eq(filesTable.id, Number(id)))
+    .returning({
+      type: sql<string>`'file'`,
+      id: filesTable.id,
+      name: filesTable.name,
+      mimeType: filesTable.mimeType,
+      sizeBytes: filesTable.sizeBytes,
+      bucketKey: filesTable.bucketKey,
+      createdAt: filesTable.createdAt,
+    });
+
+  await s3.send(
+    new DeleteObjectCommand({
+      Bucket: BUCKET,
+      Key: file[0].bucketKey,
+    }),
+  );
+
+  return res.json(file[0]);
+});
 
 export default filesController;

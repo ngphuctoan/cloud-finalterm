@@ -26,6 +26,7 @@ type File = {
   type: "file";
   id: number;
   name: string;
+  mimeType: string;
   sizeBytes: number;
   bucketKey: string;
   createdAt: string;

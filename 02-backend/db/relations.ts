@@ -9,13 +9,13 @@ const relations = defineRelations(schema, (r) => ({
     }),
   },
   foldersTable: {
-    filesTable: r.many.filesTable(),
+    files: r.many.filesTable(),
     folder: r.one.foldersTable({
       from: r.foldersTable.parentId,
       to: r.foldersTable.id,
       alias: "folders_parentId_folders_id",
     }),
-    foldersTable: r.many.foldersTable({
+    folders: r.many.foldersTable({
       alias: "folders_parentId_folders_id",
     }),
   },

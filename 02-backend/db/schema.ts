@@ -2,8 +2,8 @@ import {
   pgTable,
   serial,
   text,
-  integer,
   bigint,
+  integer,
   timestamp,
   foreignKey,
   primaryKey,
@@ -19,6 +19,7 @@ export const filesTable = pgTable("files", {
     onDelete: "cascade",
   }),
   createdAt: timestamp("created_at").default(sql`now()`),
+  mimeType: text("mime_type").notNull(),
 });
 
 export const foldersTable = pgTable(

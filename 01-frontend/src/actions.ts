@@ -56,10 +56,26 @@ export const createFolder = (data: FormData) =>
     .then((res) => res.json())
     .then((data) => data as ExplorerEntry<"folder">);
 
+export const deleteFolder = (id: number) =>
+  fetch(`${BASE_URL}/folders/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  })
+    .then((res) => res.json())
+    .then((data) => data as ExplorerEntry<"folder">);
+
 export const uploadFile = (data: FormData) =>
   fetch(`${BASE_URL}/files`, {
     method: "POST",
     body: data,
+    credentials: "include",
+  })
+    .then((res) => res.json())
+    .then((data) => data as ExplorerEntry<"file">);
+
+export const deleteFile = (id: number) =>
+  fetch(`${BASE_URL}/files/${id}`, {
+    method: "DELETE",
     credentials: "include",
   })
     .then((res) => res.json())

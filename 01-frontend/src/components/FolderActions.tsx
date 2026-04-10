@@ -1,70 +1,55 @@
-import { Button, ButtonGroup } from "react-bootstrap";
 import { useState } from "react";
-import { FaFolderPlus, FaUpload } from "react-icons/fa";
-import CreateFolderModal from "./CreateFolderModal";
+import { Dropdown } from "react-bootstrap";
+import { FaEllipsisV, FaTrashAlt } from "react-icons/fa";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFolder, uploadFile } from "../actions";
-import UploadFileModal from "./UploadFileModal";
+import type { ExplorerEntry } from "../types";
+import DeleteFolderModal from "./DeleteFolderModal";
+import { deleteFolder } from "../actions";
 
-export default function FolderActions() {
-  const [showCreateFolderModal, setShowCreateFolderModal] =
-    useState<boolean>(false);
-  const [showUploadFileModal, setShowUploadFileModal] =
+export default function FolderActions({
+  folder,
+}: {
+  folder: ExplorerEntry<"folder">;
+}) {
+  const [showDeleteFolderModal, setShowDeleteFolderModal] =
     useState<boolean>(false);
 
   const queryClient = useQueryClient();
 
-  const createFolderMutation = useMutation({
-    mutationFn: createFolder,
+  const deleteFolderMutation = useMutation({
+    mutationFn: deleteFolder,
     onSuccess: () => {
       queryClient
         .invalidateQueries({
           queryKey: ["folders"],
         })
         .then(() => {
-          setShowCreateFolderModal(false);
-        });
-    },
-  });
-
-  const uploadFileMutation = useMutation({
-    mutationFn: uploadFile,
-    onSuccess: () => {
-      queryClient
-        .invalidateQueries({
-          queryKey: ["folders"],
-        })
-        .then(() => {
-          setShowUploadFileModal(false);
+          setShowDeleteFolderModal(false);
         });
     },
   });
 
   return (
     <>
-      <ButtonGroup>
-        <Button
-          variant="outline-primary"
-          onClick={() => setShowCreateFolderModal(true)}
+      <Dropdown>
+        <Dropdown.Toggle
+          variant="link"
+          className="lh-1 p-0 hide-dropdown-caret"
         >
-          <FaFolderPlus /> Tạo thư mục
-        </Button>
-        <Button
-          variant="outline-success"
-          onClick={() => setShowUploadFileModal(true)}
-        >
-          <FaUpload /> Tải tệp tin
-        </Button>
-      </ButtonGroup>
-      <CreateFolderModal
-        show={showCreateFolderModal}
-        onHide={() => setShowCreateFolderModal(false)}
-        onCreateFolder={(formData) => createFolderMutation.mutate(formData)}
-      />
-      <UploadFileModal
-        show={showUploadFileModal}
-        onHide={() => setShowUploadFileModal(false)}
-        onUploadFile={(formData) => uploadFileMutation.mutate(formData)}
+          <FaEllipsisV className="m-1" />
+        </Dropdown.Toggle>
+        <Dropdown.Menu>
+          <Dropdown.Item onClick={() => setShowDeleteFolderModal(true)}>
+            <FaTrashAlt /> Xóa thư mục
+          </Dropdown.Item>
+        </Dropdown.Menu>
+      </Dropdown>
+      <DeleteFolderModal
+        folder={folder}
+        show={showDeleteFolderModal}
+        onHide={() => setShowDeleteFolderModal(false)}
+        isLoading={deleteFolderMutation.isPending}
+        onDeleteFolder={(id) => deleteFolderMutation.mutate(id)}
       />
     </>
   );

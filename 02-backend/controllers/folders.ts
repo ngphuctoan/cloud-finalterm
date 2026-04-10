@@ -51,13 +51,15 @@ foldersController.get("/{:id}", async (req, res) => {
           () => isNull(foldersTable.parentId),
         )
         .otherwise(() => eq(foldersTable.parentId, Number(id))),
-    );
+    )
+    .orderBy(foldersTable.name);
 
   const files = await db
     .select({
       type: sql<string>`'file'`,
       id: filesTable.id,
       name: filesTable.name,
+      mimeType: filesTable.mimeType,
       sizeBytes: filesTable.sizeBytes,
       bucketKey: filesTable.bucketKey,
       createdAt: filesTable.createdAt,
@@ -70,7 +72,8 @@ foldersController.get("/{:id}", async (req, res) => {
           () => isNull(filesTable.folderId),
         )
         .otherwise(() => eq(filesTable.folderId, Number(id))),
-    );
+    )
+    .orderBy(filesTable.name);
 
   return res.json({
     ...rootFolder,
@@ -100,15 +103,29 @@ foldersController.get("/:id/breadcrumb", async (req, res) => {
 });
 
 foldersController.post("/", parseDto(CreateFolderDto), async (req, res) => {
+  const { name, parentId } = req.body;
+
   const folder = await db
     .insert(foldersTable)
-    .values(req.body)
+    .values({
+      name: sql`(
+        SELECT ${name} || CASE
+          WHEN COUNT(*) = 0 THEN ''
+          ELSE ' (' || COUNT(*) || ')'
+        END
+        FROM folders
+        WHERE name LIKE ${name} || '%'
+        AND parent_id = ${parentId}
+      )`,
+      parentId: parentId,
+    })
     .returning({
       type: sql<string>`'folder'`,
       id: foldersTable.id,
       name: foldersTable.name,
       createdAt: foldersTable.createdAt,
     });
+
   return res.json(folder[0]);
 });
 

@@ -1,3 +1,11 @@
 @import "bootswatch/dist/flatly/variables";
 @import "bootstrap/scss/bootstrap";
 @import "bootswatch/dist/flatly/bootswatch";
+
+body {
+  font-family: "Nunito Variable", sans-serif;
+}
+
+.hide-dropdown-caret::after {
+  display: none;
+}
