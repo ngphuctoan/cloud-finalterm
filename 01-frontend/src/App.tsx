@@ -10,6 +10,7 @@ import RootFolderActions from "./components/RootFolderActions";
 import RootFolderContext from "./contexts/RootFolderContext";
 import UserContext from "./contexts/UserContext";
 import FileViewer from "./components/FileViewer";
+import SearchBar from "./components/SearchBar";
 
 export default function App() {
   const { rootFolderId } = useParams<{ rootFolderId?: string }>();
@@ -37,6 +38,7 @@ export default function App() {
           <Stack gap={4}>
             <ExplorerBreadcrumb />
             <RootFolderActions />
+            <SearchBar />
             <FileExplorer />
             <FileViewer />
           </Stack>

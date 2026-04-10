@@ -6,9 +6,11 @@ import { getContentsOfFolder } from "../actions";
 import RootFolderContext from "../contexts/RootFolderContext";
 import FileRow from "./FileRow";
 import FolderRow from "./FolderRow";
+import useSearchStore from "../stores/searchStore";
 
 export default function FileExplorer() {
   const rootFolderId = useContext(RootFolderContext);
+  const query = useSearchStore((state) => state.query);
 
   const { data, isFetching } = useQuery({
     queryKey: ["folders", rootFolderId],
@@ -27,16 +29,18 @@ export default function FileExplorer() {
           </tr>
         </thead>
         <tbody>
-          {data?.contents.map((entry, i) =>
-            match(entry)
-              .with({ type: "file" }, (entry) => (
-                <FileRow key={i} file={entry} />
-              ))
-              .with({ type: "folder" }, (entry) => (
-                <FolderRow key={i} folder={entry} />
-              ))
-              .exhaustive(),
-          )}
+          {data?.contents
+            .filter((entry) => entry.name.toLowerCase().includes(query))
+            .map((entry, i) =>
+              match(entry)
+                .with({ type: "file" }, (entry) => (
+                  <FileRow key={i} file={entry} />
+                ))
+                .with({ type: "folder" }, (entry) => (
+                  <FolderRow key={i} folder={entry} />
+                ))
+                .exhaustive(),
+            )}
         </tbody>
       </Table>
       <div
