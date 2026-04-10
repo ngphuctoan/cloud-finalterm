@@ -1,79 +1,94 @@
+import * as client from "openid-client";
+import {
+  Strategy,
+  type VerifyFunction,
+  type StrategyOptions,
+} from "openid-client/passport";
 import express from "express";
 import passport from "passport";
-import OpenIDConnectStrategy, {
-  Profile,
-  VerifyCallback,
-} from "passport-openidconnect";
-import qs from "node:querystring";
+import { ensureLoggedOut } from "connect-ensure-login";
+import validRedirect from "../middlewares/valid-redirect";
 
 const authController = express.Router();
 
-passport.use(
-  new OpenIDConnectStrategy(
-    {
-      issuer: process.env.ISSUER_BASE_URL!,
-      authorizationURL: `${process.env.ISSUER_BASE_URL}/protocol/openid-connect/auth`,
-      tokenURL: `${process.env.ISSUER_BASE_URL}/protocol/openid-connect/token`,
-      userInfoURL: `${process.env.ISSUER_BASE_URL}/protocol/openid-connect/userinfo`,
-      clientID: process.env.CLIENT_ID!,
-      clientSecret: process.env.SECRET!,
-      callbackURL: "/auth/oauth2/redirect",
-      scope: ["profile"],
-    },
-    (issuer: string, profile: Profile, cb: VerifyCallback) => {
-      return cb(null, profile);
-    },
-  ),
+const config = await client.discovery(
+  new URL(process.env.ISSUER_BASE_URL!),
+  process.env.CLIENT_ID!,
+  process.env.SECRET!,
+  client.ClientSecretPost(process.env.SECRET!),
+  {
+    execute: [client.allowInsecureRequests],
+  },
 );
 
-passport.serializeUser((user, cb) => {
-  process.nextTick(() => {
-    const profile = user as Profile;
-    cb(null, {
-      id: profile.id,
-      username: profile.username,
-      fullName: profile.displayName,
-      email: profile.emails?.[0].value,
-    });
+const options: StrategyOptions = {
+  config,
+  scope: "openid email",
+  callbackURL: `${process.env.BASE_URL}/auth/login`,
+};
+
+const verify: VerifyFunction = (tokens, verified) => {
+  verified(null, {
+    ...tokens.claims(),
+    id_token: tokens.id_token,
   });
+};
+
+passport.use("openid", new Strategy(options, verify));
+
+passport.serializeUser((user, cb) => {
+  cb(null, user);
 });
 
-passport.deserializeUser((user, cb) => {
-  process.nextTick(() => {
-    return cb(null, user as Express.User);
-  });
+passport.deserializeUser((user: Express.User, cb) => {
+  return cb(null, user);
 });
 
 authController.get("/check", (req, res) => {
+  const user = req.user as {
+    preferred_username: string;
+    name: string;
+    email: string;
+  };
   return res.json({
     isAuthenticated: req.isAuthenticated(),
-    user: req.user || null,
-  });
-});
-
-authController.get("/login", passport.authenticate("openidconnect"));
-
-authController.post("/logout", (req, res, next) => {
-  req.logout((err) => {
-    if (err) {
-      return next(err);
-    }
-    var params = {
-      client_id: process.env.CLIENT_ID!,
-      returnTo: "http://localhost:5173",
-    };
-    return res.json({
-      url: `${process.env.ISSUER_BASE_URL}/protocol/openid-connect/logout?${qs.stringify(params)}`,
-    });
+    user: !req.user
+      ? null
+      : {
+          username: user.preferred_username,
+          fullName: user.name,
+          email: user.email,
+        },
   });
 });
 
 authController.get(
-  "/oauth2/redirect",
-  passport.authenticate("openidconnect", {
-    successRedirect: "http://localhost:5173",
-    failureRedirect: "/auth/login",
-  }),
+  "/login",
+  validRedirect,
+  (req, res, next) =>
+    ensureLoggedOut(
+      (req as any).session.validRedirectUri ||
+        `${req.protocol}://${req.host}/auth/check`,
+    )(req, res, next),
+  (req, res, next) =>
+    passport.authenticate("openid", {
+      successRedirect:
+        (req as any).session.validRedirectUri ||
+        `${req.protocol}://${req.host}/auth/check`,
+    })(req, res, next),
 );
+
+authController.get("/logout", validRedirect, (req, res) => {
+  const { id_token } = req.user as { id_token: string };
+  const { validRedirectUri } = (req as any).session;
+  req.logout(() => {
+    const logoutUrl = client.buildEndSessionUrl(config, {
+      id_token_hint: id_token,
+      post_logout_redirect_uri:
+        validRedirectUri || `${req.protocol}://${req.host}/auth/check`,
+    }).href;
+    res.json({ url: logoutUrl });
+  });
+});
 
 export default authController;

@@ -8,6 +8,7 @@ import { useParams } from "react-router";
 import RootFolderContext from "./contexts/RootFolderContext";
 import FolderActions from "./components/FolderActions";
 import ExplorerBreadcrumb from "./components/ExplorerBreadcrumb";
+import { useEffect } from "react";
 
 export default function App() {
   const { rootFolderId } = useParams<{ rootFolderId?: string }>();
@@ -15,10 +16,13 @@ export default function App() {
   const { data } = useQuery({
     queryKey: ["auth", "check"],
     queryFn: checkAuth,
-    meta: {
-      redirectTo: `${BASE_URL}/auth/login`,
-    },
   });
+
+  useEffect(() => {
+    if (data?.isAuthenticated === false) {
+      window.location.href = `${BASE_URL}/auth/login?redirect_uri=${window.location.origin}`;
+    }
+  }, [data?.isAuthenticated]);
 
   return (
     <UserContext.Provider value={data?.user || null}>

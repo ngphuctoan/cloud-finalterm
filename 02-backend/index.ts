@@ -1,4 +1,5 @@
 import { RedisStore } from "connect-redis";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import session from "express-session";
@@ -7,6 +8,7 @@ import { createClient } from "redis";
 import authController from "./controllers/auth";
 import filesController from "./controllers/files";
 import foldersController from "./controllers/folders";
+import checkAuth from "./middlewares/check-auth";
 
 const app = express();
 
@@ -27,6 +29,7 @@ const redisStore = new RedisStore({
   prefix: "keepbin:",
 });
 
+app.use(cookieParser());
 app.use(
   session({
     store: redisStore,
@@ -38,8 +41,8 @@ app.use(
 app.use(passport.authenticate("session"));
 
 app.use("/auth", authController);
-app.use("/folders", foldersController);
-app.use("/files", filesController);
+app.use("/folders", checkAuth, foldersController);
+app.use("/files", checkAuth, filesController);
 
 const PORT = 3000;
 app.listen(PORT, async () => {

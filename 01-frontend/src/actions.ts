@@ -10,8 +10,7 @@ export const checkAuth = () =>
     .then((data) => data as Auth);
 
 export const logout = () =>
-  fetch(`${BASE_URL}/auth/logout`, {
-    method: "POST",
+  fetch(`${BASE_URL}/auth/logout?redirect_uri=${window.location.origin}`, {
     credentials: "include",
   })
     .then((res) => res.json())
@@ -35,8 +34,9 @@ export const getFolderBreadcrumb = (rootFolderId?: number) => {
   if (!rootFolderId) {
     return [];
   }
-
-  return fetch(`${BASE_URL}/folders/${rootFolderId}/breadcrumb`)
+  return fetch(`${BASE_URL}/folders/${rootFolderId}/breadcrumb`, {
+    credentials: "include",
+  })
     .then((res) => res.json())
     .then((data) => data as { id: string; name: string }[]);
 };
