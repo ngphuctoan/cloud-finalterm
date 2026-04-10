@@ -5,7 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Route, Routes } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import App from "./App.tsx";
 import "@fontsource-variable/nunito/wght.css";
 import "./index.scss";
@@ -23,7 +23,8 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
-          <Route path=":rootFolderId?" element={<App />} />
+          <Route index element={<Navigate to="/folders" />} />
+          <Route path="/folders/:rootFolderId?" element={<App />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

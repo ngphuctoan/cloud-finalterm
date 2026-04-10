@@ -35,7 +35,7 @@ export default function ExplorerBreadcrumb() {
         <Breadcrumb.Item
           key={i}
           linkAs={Link}
-          linkProps={{ to: `/${breadcrumb.id}` }}
+          linkProps={{ to: `/folders/${breadcrumb.id}` }}
           active={rootFolderId === breadcrumb.id}
         >
           {breadcrumb.name}

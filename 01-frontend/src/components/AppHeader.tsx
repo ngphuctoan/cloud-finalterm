@@ -2,6 +2,7 @@ import { Container, Navbar } from "react-bootstrap";
 import { FaFolder } from "react-icons/fa";
 import UserMenu from "./UserMenu";
 import type { CSSProperties } from "react";
+import { Link } from "react-router";
 
 export default function AppHeader() {
   return (
@@ -17,7 +18,7 @@ export default function AppHeader() {
       }
     >
       <Container>
-        <Navbar.Brand href="#" className="fw-bold">
+        <Navbar.Brand as={Link} to="/folders" className="fw-bold">
           <FaFolder /> &ensp; KeepBin
         </Navbar.Brand>
         <UserMenu />

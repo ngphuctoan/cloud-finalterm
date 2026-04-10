@@ -1,23 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Container, Stack } from "react-bootstrap";
+import { useParams } from "react-router";
 import { BASE_URL, checkAuth } from "./actions";
 import AppHeader from "./components/AppHeader";
-import UserContext from "./contexts/UserContext";
-import FileExplorer from "./components/FileExplorer";
-import { useParams } from "react-router";
-import RootFolderContext from "./contexts/RootFolderContext";
-import RootFolderActions from "./components/RootFolderActions";
 import ExplorerBreadcrumb from "./components/ExplorerBreadcrumb";
-import { useEffect } from "react";
-import navigationStore from "./stores/NavigationStore";
-import { useLocation } from "react-router";
-import { match } from "ts-pattern";
-import { useNavigate } from "react-router";
+import FileExplorer from "./components/FileExplorer";
+import RootFolderActions from "./components/RootFolderActions";
+import RootFolderContext from "./contexts/RootFolderContext";
+import UserContext from "./contexts/UserContext";
 
 export default function App() {
-  const location = useLocation();
-  const navigate = useNavigate();
-
   const { rootFolderId } = useParams<{ rootFolderId?: string }>();
 
   const { data } = useQuery({
