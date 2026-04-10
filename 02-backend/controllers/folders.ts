@@ -8,6 +8,7 @@ import CreateFolderDto from "../dtos/create-folder";
 import parseDto from "../middlewares/parse-dto";
 import s3, { BUCKET } from "../utils/s3";
 import { DUPLICATE_AFFIX } from "../utils/constants";
+import * as v from "valibot";
 
 const foldersController = express.Router();
 
@@ -104,7 +105,7 @@ foldersController.get("/:id/breadcrumb", async (req, res) => {
 });
 
 foldersController.post("/", parseDto(CreateFolderDto), async (req, res) => {
-  const { name, parentId } = req.body;
+  const { name, parentId } = req.body as v.InferInput<typeof CreateFolderDto>;
 
   let finalName = name;
 
@@ -115,7 +116,12 @@ foldersController.post("/", parseDto(CreateFolderDto), async (req, res) => {
       .where(
         and(
           eq(foldersTable.name, finalName),
-          eq(foldersTable.parentId, parentId),
+          match(parentId)
+            .when(
+              (parentId) => parentId === undefined,
+              () => isNull(foldersTable.parentId),
+            )
+            .otherwise(() => eq(foldersTable.parentId, Number(parentId))),
         ),
       );
     if (existingNames.length === 0) {
@@ -128,7 +134,7 @@ foldersController.post("/", parseDto(CreateFolderDto), async (req, res) => {
     .insert(foldersTable)
     .values({
       name: finalName,
-      parentId,
+      parentId: parentId ? Number(parentId) : undefined,
     })
     .returning({
       type: sql<string>`'folder'`,

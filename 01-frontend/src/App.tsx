@@ -9,6 +9,7 @@ import FileExplorer from "./components/FileExplorer";
 import RootFolderActions from "./components/RootFolderActions";
 import RootFolderContext from "./contexts/RootFolderContext";
 import UserContext from "./contexts/UserContext";
+import FileViewer from "./components/FileViewer";
 
 export default function App() {
   const { rootFolderId } = useParams<{ rootFolderId?: string }>();
@@ -37,6 +38,7 @@ export default function App() {
             <ExplorerBreadcrumb />
             <RootFolderActions />
             <FileExplorer />
+            <FileViewer />
           </Stack>
         </Container>
       </RootFolderContext.Provider>

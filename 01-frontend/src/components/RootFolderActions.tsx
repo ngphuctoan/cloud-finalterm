@@ -1,10 +1,10 @@
 import { Button, ButtonGroup } from "react-bootstrap";
 import { useState } from "react";
 import { FaFolderPlus, FaUpload } from "react-icons/fa";
-import CreateFolderModal from "./CreateFolderModal";
+import CreateFolderModal from "./modals/CreateFolderModal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFolder, uploadFile } from "../actions";
-import UploadFileModal from "./UploadFileModal";
+import UploadFileModal from "./modals/UploadFileModal";
 import type { FetchError } from "../utils/parseError";
 
 export default function RootFolderActions() {

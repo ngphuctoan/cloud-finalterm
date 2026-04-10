@@ -10,7 +10,7 @@ import FolderRow from "./FolderRow";
 export default function FileExplorer() {
   const rootFolderId = useContext(RootFolderContext);
 
-  const { data, isFetching, isPlaceholderData } = useQuery({
+  const { data, isFetching } = useQuery({
     queryKey: ["folders", rootFolderId],
     queryFn: () => getContentsOfFolder(rootFolderId),
   });
@@ -44,7 +44,7 @@ export default function FileExplorer() {
         style={{
           inset: 0,
           cursor: "wait",
-          display: isFetching && !isPlaceholderData ? "flex" : "none",
+          display: isFetching ? "flex" : "none",
         }}
       >
         <Spinner className="m-auto" />

@@ -1,19 +1,17 @@
 import { useContext, type SubmitEvent } from "react";
-import RootFolderContext from "../contexts/RootFolderContext";
+import RootFolderContext from "../../contexts/RootFolderContext";
 import { Button, Form, Modal, Spinner } from "react-bootstrap";
 
-export default function CreateFolderModal({
+export default function UploadFileModal({
   show,
   onHide,
   isLoading,
-  errors,
-  onCreateFolder,
+  onUploadFile,
 }: {
   show: boolean;
   onHide: () => void;
   isLoading?: boolean;
-  errors?: Record<string, string[]>;
-  onCreateFolder: (formData: FormData) => void;
+  onUploadFile: (formData: FormData) => void;
 }) {
   const rootFolderId = useContext(RootFolderContext);
 
@@ -22,33 +20,26 @@ export default function CreateFolderModal({
 
     const formData = new FormData(event.currentTarget);
     if (rootFolderId) {
-      formData.append("parentId", rootFolderId.toString());
+      formData.append("folderId", rootFolderId.toString());
     }
 
-    onCreateFolder(formData);
+    onUploadFile(formData);
   };
 
   return (
     <Modal show={show} onHide={onHide} centered>
       <Modal.Header closeButton>
-        <Modal.Title>Tạo thư mục</Modal.Title>
+        <Modal.Title>Tải tệp tin</Modal.Title>
       </Modal.Header>
-      <Form onSubmit={onSubmit}>
+      <Form encType="multipart/form-data" onSubmit={onSubmit}>
         <Modal.Body>
           <Form.Group>
-            <Form.Label>Nhập tên thư mục cần tạo:</Form.Label>
-            <Form.Control
-              name="name"
-              autoFocus
-              isInvalid={errors?.name?.length > 0}
-            />
-            <Form.Control.Feedback type="invalid">
-              {errors?.name?.[0]}
-            </Form.Control.Feedback>
+            <Form.Label>Chọn tệp tin cần tải:</Form.Label>
+            <Form.Control type="file" name="file" />
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button type="submit" variant="primary" disabled={isLoading}>
+          <Button type="submit" variant="primary">
             <Spinner hidden={!isLoading} size="sm" /> Lưu
           </Button>
         </Modal.Footer>

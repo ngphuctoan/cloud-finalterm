@@ -1,5 +1,5 @@
 import { Button, Modal, Spinner } from "react-bootstrap";
-import type { ExplorerEntry } from "../types";
+import type { ExplorerEntry } from "../../types";
 
 export default function DeleteFolderModal({
   folder,

@@ -81,3 +81,10 @@ export const deleteFile = (id: number) =>
   })
     .then(errorCheck)
     .then((data) => data as ExplorerEntry<"file">);
+
+export const getFileUrl = (id: number) =>
+  fetch(`${BASE_URL}/files/${id}`, {
+    credentials: "include",
+  })
+    .then(errorCheck)
+    .then((data) => data as { url: string });

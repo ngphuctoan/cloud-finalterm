@@ -26,7 +26,7 @@ export default function ExplorerBreadcrumb() {
     >
       <Breadcrumb.Item
         linkAs={Link}
-        linkProps={{ to: "/" }}
+        linkProps={{ to: "/folders" }}
         active={rootFolderId === null}
       >
         <FaHome />

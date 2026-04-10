@@ -4,7 +4,7 @@ import { Dropdown } from "react-bootstrap";
 import { FaEllipsisV, FaTrashAlt } from "react-icons/fa";
 import { deleteFile } from "../actions";
 import type { ExplorerEntry } from "../types";
-import DeleteFileModal from "./DeleteFileModal";
+import DeleteFileModal from "./modals/DeleteFileModal";
 
 export default function FileActions({ file }: { file: ExplorerEntry<"file"> }) {
   const [showDeleteFileModal, setShowDeleteFileModal] =

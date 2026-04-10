@@ -3,7 +3,7 @@ import { Dropdown } from "react-bootstrap";
 import { FaEllipsisV, FaTrashAlt } from "react-icons/fa";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ExplorerEntry } from "../types";
-import DeleteFolderModal from "./DeleteFolderModal";
+import DeleteFolderModal from "./modals/DeleteFolderModal";
 import { deleteFolder } from "../actions";
 
 export default function FolderActions({

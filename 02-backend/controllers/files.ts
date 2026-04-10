@@ -1,4 +1,8 @@
-import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import express from "express";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
@@ -9,17 +13,42 @@ import upload from "../utils/multer";
 import s3, { BUCKET } from "../utils/s3";
 import parseDto from "../middlewares/parse-dto";
 import UploadFileDto from "../dtos/upload-file";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { DUPLICATE_AFFIX } from "../utils/constants";
+import * as v from "valibot";
+import { match } from "ts-pattern";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const filesController = express.Router();
+
+filesController.get("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  const file = await db
+    .select({
+      bucketKey: filesTable.bucketKey,
+    })
+    .from(filesTable)
+    .where(eq(filesTable.id, Number(id)));
+
+  const url = await getSignedUrl(
+    s3,
+    new GetObjectCommand({
+      Bucket: BUCKET,
+      Key: file[0].bucketKey,
+    }),
+    { expiresIn: 60 },
+  );
+
+  return res.json({ url });
+});
 
 filesController.post(
   "/",
   upload.single("file"),
   parseDto(UploadFileDto),
   async (req, res) => {
-    const { folderId } = req.body;
+    const { folderId } = req.body as v.InferInput<typeof UploadFileDto>;
 
     const file = req.file!;
     const fileName = path.parse(file.originalname);
@@ -36,8 +65,13 @@ filesController.post(
         .from(filesTable)
         .where(
           and(
-            eq(filesTable.name, finalName),
-            eq(filesTable.folderId, folderId),
+            eq(filesTable.name, finalName + ext),
+            match(folderId)
+              .when(
+                (folderId) => folderId === undefined,
+                () => isNull(filesTable.folderId),
+              )
+              .otherwise(() => eq(filesTable.folderId, Number(folderId))),
           ),
         );
       if (existingNames.length === 0) {
