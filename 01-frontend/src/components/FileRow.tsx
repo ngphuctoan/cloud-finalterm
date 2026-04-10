@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import type { ExplorerEntry } from "../types";
 import FileIcon from "./FileIcon";
 import { Link } from "react-router";
-import toFileSizeFormat from "../utils/file-size";
+import toFileSizeFormat from "../utils/fileSize";
 import FileActions from "./FileActions";
 
 export default function FileRow({ file }: { file: ExplorerEntry<"file"> }) {

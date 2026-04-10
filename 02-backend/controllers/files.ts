@@ -9,7 +9,8 @@ import upload from "../utils/multer";
 import s3, { BUCKET } from "../utils/s3";
 import parseDto from "../middlewares/parse-dto";
 import UploadFileDto from "../dtos/upload-file";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+import { DUPLICATE_AFFIX } from "../utils/constants";
 
 const filesController = express.Router();
 
@@ -27,10 +28,28 @@ filesController.post(
     const ext = fileName.ext.toLowerCase();
     const normalizedFileName = normalizeFileName(fileName.name);
 
+    let finalName = normalizedFileName;
+
+    while (true) {
+      const existingNames = await db
+        .select()
+        .from(filesTable)
+        .where(
+          and(
+            eq(filesTable.name, finalName),
+            eq(filesTable.folderId, folderId),
+          ),
+        );
+      if (existingNames.length === 0) {
+        break;
+      }
+      finalName += DUPLICATE_AFFIX;
+    }
+
     await s3.send(
       new PutObjectCommand({
         Bucket: BUCKET,
-        Key: `${key}${ext}`,
+        Key: key + ext,
         Body: file.buffer,
         ContentType: file.mimetype,
       }),
@@ -39,18 +58,10 @@ filesController.post(
     const resultingFile = await db
       .insert(filesTable)
       .values({
-        name: sql`(
-          SELECT ${normalizedFileName} || CASE
-            WHEN COUNT(*) = 0 THEN ''
-            ELSE ' (' || COUNT(*) || ')'
-          END || ${ext}
-          FROM files
-          WHERE name LIKE ${normalizedFileName} || '%'
-          AND folder_id = ${folderId}
-        )`,
+        name: finalName + ext,
         mimeType: file.mimetype,
         sizeBytes: file.size,
-        bucketKey: `${key}${ext}`,
+        bucketKey: key + ext,
         folderId: folderId ? Number(folderId) : undefined,
       })
       .returning({

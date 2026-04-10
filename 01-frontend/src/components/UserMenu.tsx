@@ -26,7 +26,7 @@ export default function UserMenu() {
         <FaUser /> {user?.username || <Spinner size="sm" />}
       </Dropdown.Toggle>
       <Dropdown.Menu data-bs-theme="light">
-        <Dropdown.Item onClick={() => mutation.mutate()}>
+        <Dropdown.Item onClick={() => mutation.mutate(window.location.href)}>
           <FaSignOutAlt /> Đăng xuất
         </Dropdown.Item>
       </Dropdown.Menu>

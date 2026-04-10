@@ -6,11 +6,13 @@ export default function CreateFolderModal({
   show,
   onHide,
   isLoading,
+  errors,
   onCreateFolder,
 }: {
   show: boolean;
   onHide: () => void;
   isLoading?: boolean;
+  errors?: Record<string, string[]>;
   onCreateFolder: (formData: FormData) => void;
 }) {
   const rootFolderId = useContext(RootFolderContext);
@@ -35,7 +37,14 @@ export default function CreateFolderModal({
         <Modal.Body>
           <Form.Group>
             <Form.Label>Nhập tên thư mục cần tạo:</Form.Label>
-            <Form.Control name="name" autoFocus />
+            <Form.Control
+              name="name"
+              autoFocus
+              isInvalid={errors?.name?.length > 0}
+            />
+            <Form.Control.Feedback type="invalid">
+              {errors?.name?.[0]}
+            </Form.Control.Feedback>
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>

@@ -5,6 +5,7 @@ import CreateFolderModal from "./CreateFolderModal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFolder, uploadFile } from "../actions";
 import UploadFileModal from "./UploadFileModal";
+import type { FetchError } from "../utils/parseError";
 
 export default function RootFolderActions() {
   const [showCreateFolderModal, setShowCreateFolderModal] =
@@ -60,6 +61,10 @@ export default function RootFolderActions() {
         show={showCreateFolderModal}
         onHide={() => setShowCreateFolderModal(false)}
         isLoading={createFolderMutation.isPending}
+        errors={
+          (createFolderMutation.error as unknown as FetchError<"validation">)
+            ?.fieldErrors
+        }
         onCreateFolder={(formData) => createFolderMutation.mutate(formData)}
       />
       <UploadFileModal

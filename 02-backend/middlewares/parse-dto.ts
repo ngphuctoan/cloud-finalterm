@@ -6,7 +6,6 @@ const parseDto =
     dto: B,
   ) =>
   (req: Request, res: Response, next: NextFunction) => {
-    console.log(req.body);
     const result = v.safeParse(dto, req.body);
     if (!result.success) {
       return res.status(400).json(v.flatten(result.issues));

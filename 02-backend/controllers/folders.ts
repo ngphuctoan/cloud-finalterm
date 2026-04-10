@@ -1,5 +1,5 @@
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
-import { eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import express from "express";
 import { match } from "ts-pattern";
 import db from "../db";
@@ -7,6 +7,7 @@ import { filesTable, foldersTable } from "../db/schema";
 import CreateFolderDto from "../dtos/create-folder";
 import parseDto from "../middlewares/parse-dto";
 import s3, { BUCKET } from "../utils/s3";
+import { DUPLICATE_AFFIX } from "../utils/constants";
 
 const foldersController = express.Router();
 
@@ -105,19 +106,29 @@ foldersController.get("/:id/breadcrumb", async (req, res) => {
 foldersController.post("/", parseDto(CreateFolderDto), async (req, res) => {
   const { name, parentId } = req.body;
 
+  let finalName = name;
+
+  while (true) {
+    const existingNames = await db
+      .select()
+      .from(foldersTable)
+      .where(
+        and(
+          eq(foldersTable.name, finalName),
+          eq(foldersTable.parentId, parentId),
+        ),
+      );
+    if (existingNames.length === 0) {
+      break;
+    }
+    finalName += DUPLICATE_AFFIX;
+  }
+
   const folder = await db
     .insert(foldersTable)
     .values({
-      name: sql`(
-        SELECT ${name} || CASE
-          WHEN COUNT(*) = 0 THEN ''
-          ELSE ' (' || COUNT(*) || ')'
-        END
-        FROM folders
-        WHERE name LIKE ${name} || '%'
-        AND parent_id = ${parentId}
-      )`,
-      parentId: parentId,
+      name: finalName,
+      parentId,
     })
     .returning({
       type: sql<string>`'folder'`,
