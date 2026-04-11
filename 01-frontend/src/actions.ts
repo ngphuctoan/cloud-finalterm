@@ -65,6 +65,20 @@ export const deleteFolder = (id: number) =>
     .then(errorCheck)
     .then((data) => data as ExplorerEntry<"folder">);
 
+export const updateFolder = (id: number, data: FormData) =>
+  fetch(`${BASE_URL}/folders/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: data.get("name"),
+    }),
+    credentials: "include",
+  })
+    .then(errorCheck)
+    .then((data) => data as ExplorerEntry<"folder">);
+
 export const uploadFile = (data: FormData) =>
   fetch(`${BASE_URL}/files`, {
     method: "POST",
@@ -77,6 +91,20 @@ export const uploadFile = (data: FormData) =>
 export const deleteFile = (id: number) =>
   fetch(`${BASE_URL}/files/${id}`, {
     method: "DELETE",
+    credentials: "include",
+  })
+    .then(errorCheck)
+    .then((data) => data as ExplorerEntry<"file">);
+
+export const updateFile = (id: number, data: FormData) =>
+  fetch(`${BASE_URL}/files/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: data.get("name"),
+    }),
     credentials: "include",
   })
     .then(errorCheck)

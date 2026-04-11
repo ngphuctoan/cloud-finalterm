@@ -3,6 +3,8 @@ import { FaQuestionCircle } from "react-icons/fa";
 import { match } from "ts-pattern";
 import CodeMirror from "@uiw/react-codemirror";
 import { useQuery } from "@tanstack/react-query";
+import getCurrentTheme from "../utils/getCurrentTheme";
+import useThemeStore from "../stores/themeStore";
 
 export default function FilePreview({
   url,
@@ -13,6 +15,8 @@ export default function FilePreview({
   mimeType: string;
   ext?: string;
 }) {
+  const theme = useThemeStore((state) => state.theme);
+
   const { data } = useQuery({
     queryKey: [url],
     queryFn: () => fetch(url).then((res) => res.text()),
@@ -27,13 +31,14 @@ export default function FilePreview({
           value={data || ""}
           editable={false}
           className="w-100"
-          height="450px"
+          height="500px"
+          theme={getCurrentTheme(theme)}
         />
       ),
     )
     .when(
       ([mimeType]) => mimeType === "application/pdf",
-      () => <iframe src={url} width="100%" height={450} />,
+      () => <iframe src={url} width="100%" height={500} />,
     )
     .when(
       ([mimeType]) => mimeType.startsWith("image"),

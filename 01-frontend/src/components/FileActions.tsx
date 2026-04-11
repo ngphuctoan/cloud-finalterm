@@ -1,13 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Dropdown } from "react-bootstrap";
-import { FaDownload, FaEllipsisV, FaTrashAlt } from "react-icons/fa";
-import { deleteFile, getFileUrl } from "../actions";
+import { FaDownload, FaEdit, FaEllipsisV, FaTrashAlt } from "react-icons/fa";
+import { deleteFile, getFileUrl, updateFile } from "../actions";
 import type { ExplorerEntry } from "../types";
 import DeleteFileModal from "./modals/DeleteFileModal";
+import RenameFileModal from "./modals/RenameFileModal";
+import type { FetchError } from "../utils/parseError";
 
 export default function FileActions({ file }: { file: ExplorerEntry<"file"> }) {
   const [showDeleteFileModal, setShowDeleteFileModal] =
+    useState<boolean>(false);
+  const [showRenameFileModal, setShowRenameFileModal] =
     useState<boolean>(false);
 
   const queryClient = useQueryClient();
@@ -21,6 +25,20 @@ export default function FileActions({ file }: { file: ExplorerEntry<"file"> }) {
         })
         .then(() => {
           setShowDeleteFileModal(false);
+        });
+    },
+  });
+
+  const renameFileMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: FormData }) =>
+      updateFile(id, data),
+    onSuccess: () => {
+      queryClient
+        .invalidateQueries({
+          queryKey: ["folders"],
+        })
+        .then(() => {
+          setShowRenameFileModal(false);
         });
     },
   });
@@ -45,11 +63,25 @@ export default function FileActions({ file }: { file: ExplorerEntry<"file"> }) {
           <Dropdown.Item onClick={() => downloadFileMutation.mutate(file.id)}>
             <FaDownload /> Tải về
           </Dropdown.Item>
+          <Dropdown.Item onClick={() => setShowRenameFileModal(true)}>
+            <FaEdit /> Đổi tên
+          </Dropdown.Item>
           <Dropdown.Item onClick={() => setShowDeleteFileModal(true)}>
             <FaTrashAlt /> Xóa tệp tin
           </Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>
+      <RenameFileModal
+        file={file}
+        show={showRenameFileModal}
+        onHide={() => setShowRenameFileModal(false)}
+        isLoading={renameFileMutation.isPending}
+        errors={
+          (renameFileMutation.error as unknown as FetchError<"validation">)
+            ?.fieldErrors
+        }
+        onRenameFile={(id, data) => renameFileMutation.mutate({ id, data })}
+      />
       <DeleteFileModal
         file={file}
         show={showDeleteFileModal}

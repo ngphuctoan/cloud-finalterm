@@ -32,10 +32,14 @@ export default function App() {
       <RootFolderContext.Provider
         value={rootFolderId ? Number(rootFolderId) : null}
       >
-        <Container>
+        <Container className="mb-5">
           <Stack gap={4}>
             <SearchBar />
-            <Stack direction="horizontal" gap={2} className="flex-wrap">
+            <Stack
+              direction="horizontal"
+              gap={4}
+              className="flex-wrap justify-content-end"
+            >
               <div className="flex-grow-1">
                 <ExplorerBreadcrumb />
               </div>

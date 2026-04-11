@@ -1,6 +1,6 @@
-@import "bootswatch/dist/sandstone/variables";
+@import "bootswatch/dist/cosmo/variables";
 @import "bootstrap/scss/bootstrap";
-@import "bootswatch/dist/sandstone/bootswatch";
+@import "bootswatch/dist/cosmo/bootswatch";
 
 body {
   font-family: "Nunito Variable", sans-serif;
@@ -8,4 +8,14 @@ body {
 
 .hide-dropdown-caret::after {
   display: none;
+}
+
+.modal-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+table tbody tr:last-of-type td {
+  border-bottom-width: 0;
 }

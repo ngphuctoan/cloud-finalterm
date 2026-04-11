@@ -19,7 +19,7 @@ export default function FileViewer() {
   return (
     <Modal show={file !== null} onHide={onHide} size="xl">
       <Modal.Header closeButton>
-        <Modal.Title className="text-truncate">{file?.name}</Modal.Title>
+        <Modal.Title>{file?.name}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <Stack className="align-items-center">

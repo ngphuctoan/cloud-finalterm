@@ -15,7 +15,7 @@ type TitleStore = TitleStoreState & TitleStoreActions;
 const useTitleStore = create<TitleStore>((set, get) => ({
   title: "Home",
   affix: "KeepBin",
-  separator: " | ",
+  separator: " • ",
   setTitle: (title) =>
     set({ title: title ? title + get().separator + get().affix : get().affix }),
 }));

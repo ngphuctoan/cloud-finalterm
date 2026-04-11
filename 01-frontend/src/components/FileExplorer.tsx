@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useContext } from "react";
-import { Spinner, Table } from "react-bootstrap";
+import { Spinner, Stack, Table } from "react-bootstrap";
 import { match } from "ts-pattern";
 import { getContentsOfFolder } from "../actions";
 import RootFolderContext from "../contexts/RootFolderContext";
@@ -8,6 +8,7 @@ import FileRow from "./FileRow";
 import FolderRow from "./FolderRow";
 import useSearchStore from "../stores/searchStore";
 import useTitleStore from "../stores/titleStore";
+import { FaFolderOpen } from "react-icons/fa";
 
 export default function FileExplorer() {
   const rootFolderId = useContext(RootFolderContext);
@@ -24,8 +25,14 @@ export default function FileExplorer() {
   }
 
   return (
-    <div className="position-relative">
-      <Table bordered className="align-middle">
+    <div className="position-relative table-responsive border">
+      <Table
+        className="align-middle"
+        style={{
+          minWidth: "max-content",
+          marginBottom: 0,
+        }}
+      >
         <thead>
           <tr>
             <th>Tên</th>
@@ -35,18 +42,44 @@ export default function FileExplorer() {
           </tr>
         </thead>
         <tbody>
-          {data?.contents
-            .filter((entry) => entry.name.toLowerCase().includes(query))
-            .map((entry, i) =>
-              match(entry)
-                .with({ type: "file" }, (entry) => (
-                  <FileRow key={i} file={entry} />
-                ))
-                .with({ type: "folder" }, (entry) => (
-                  <FolderRow key={i} folder={entry} />
-                ))
-                .exhaustive(),
-            )}
+          {match(data?.contents)
+            .when(
+              (contents) => contents?.length > 0,
+              (contents) =>
+                contents
+                  .filter((entry) => entry.name.toLowerCase().includes(query))
+                  .map((entry, i) =>
+                    match(entry)
+                      .with({ type: "file" }, (entry) => (
+                        <FileRow key={i} file={entry} />
+                      ))
+                      .with({ type: "folder" }, (entry) => (
+                        <FolderRow key={i} folder={entry} />
+                      ))
+                      .exhaustive(),
+                  ),
+            )
+            .otherwise((contents) => (
+              <tr>
+                <td colSpan={4}>
+                  <Stack
+                    className={
+                      contents === undefined
+                        ? "invisible"
+                        : "align-items-center"
+                    }
+                  >
+                    <FaFolderOpen
+                      size={64}
+                      className="text-body-tertiary my-2"
+                    />
+                    <p className="lead text-body-tertiary my-2">
+                      Thư mục trống trơn luôn...
+                    </p>
+                  </Stack>
+                </td>
+              </tr>
+            ))}
         </tbody>
       </Table>
       <div
