@@ -82,8 +82,8 @@ export const deleteFile = (id: number) =>
     .then(errorCheck)
     .then((data) => data as ExplorerEntry<"file">);
 
-export const getFileUrl = (id: number) =>
-  fetch(`${BASE_URL}/files/${id}`, {
+export const getFileUrl = (id: number, download: boolean = false) =>
+  fetch(`${BASE_URL}/files/${id}?download=${download.toString()}`, {
     credentials: "include",
   })
     .then(errorCheck)

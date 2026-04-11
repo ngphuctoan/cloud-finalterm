@@ -22,9 +22,7 @@ export default function App() {
 
   useEffect(() => {
     if (data?.isAuthenticated === false) {
-      window.location.replace(
-        `${BASE_URL}/auth/login?redirect_uri=${window.location.href}`,
-      );
+      window.location.href = `${BASE_URL}/auth/login?redirect_uri=${window.location.href}`;
     }
   }, [data?.isAuthenticated]);
 
@@ -36,9 +34,13 @@ export default function App() {
       >
         <Container>
           <Stack gap={4}>
-            <ExplorerBreadcrumb />
-            <RootFolderActions />
             <SearchBar />
+            <Stack direction="horizontal" gap={2} className="flex-wrap">
+              <div className="flex-grow-1">
+                <ExplorerBreadcrumb />
+              </div>
+              <RootFolderActions />
+            </Stack>
             <FileExplorer />
             <FileViewer />
           </Stack>

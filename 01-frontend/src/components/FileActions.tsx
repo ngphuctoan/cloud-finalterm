@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Dropdown } from "react-bootstrap";
-import { FaEllipsisV, FaTrashAlt } from "react-icons/fa";
-import { deleteFile } from "../actions";
+import { FaDownload, FaEllipsisV, FaTrashAlt } from "react-icons/fa";
+import { deleteFile, getFileUrl } from "../actions";
 import type { ExplorerEntry } from "../types";
 import DeleteFileModal from "./modals/DeleteFileModal";
 
@@ -25,6 +25,13 @@ export default function FileActions({ file }: { file: ExplorerEntry<"file"> }) {
     },
   });
 
+  const downloadFileMutation = useMutation({
+    mutationFn: (id: number) =>
+      getFileUrl(id, true).then((data) => {
+        window.location.href = data.url;
+      }),
+  });
+
   return (
     <>
       <Dropdown>
@@ -35,6 +42,9 @@ export default function FileActions({ file }: { file: ExplorerEntry<"file"> }) {
           <FaEllipsisV className="m-1" />
         </Dropdown.Toggle>
         <Dropdown.Menu>
+          <Dropdown.Item onClick={() => downloadFileMutation.mutate(file.id)}>
+            <FaDownload /> Tải về
+          </Dropdown.Item>
           <Dropdown.Item onClick={() => setShowDeleteFileModal(true)}>
             <FaTrashAlt /> Xóa tệp tin
           </Dropdown.Item>

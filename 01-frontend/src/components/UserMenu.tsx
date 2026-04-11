@@ -4,6 +4,8 @@ import { FaSignOutAlt, FaUser } from "react-icons/fa";
 import { logout } from "../actions";
 import { useContext } from "react";
 import UserContext from "../contexts/UserContext";
+import useThemeStore from "../stores/themeStore";
+import getCurrentTheme from "../utils/getCurrentTheme";
 
 export default function UserMenu() {
   const queryClient = useQueryClient();
@@ -19,13 +21,14 @@ export default function UserMenu() {
   });
 
   const user = useContext(UserContext);
+  const theme = useThemeStore((state) => state.theme);
 
   return (
     <Dropdown>
       <Dropdown.Toggle>
         <FaUser /> {user?.username || <Spinner size="sm" />}
       </Dropdown.Toggle>
-      <Dropdown.Menu data-bs-theme="light">
+      <Dropdown.Menu data-bs-theme={getCurrentTheme(theme)}>
         <Dropdown.Item onClick={() => mutation.mutate(window.location.href)}>
           <FaSignOutAlt /> Đăng xuất
         </Dropdown.Item>

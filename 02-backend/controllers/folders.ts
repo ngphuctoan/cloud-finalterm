@@ -1,13 +1,15 @@
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, not, sql } from "drizzle-orm";
 import express from "express";
 import { match } from "ts-pattern";
 import db from "../db";
 import { filesTable, foldersTable } from "../db/schema";
 import CreateFolderDto from "../dtos/create-folder";
+import UpdateFolderDto from "../dtos/update-folder";
 import parseDto from "../middlewares/parse-dto";
 import s3, { BUCKET } from "../utils/s3";
 import { DUPLICATE_AFFIX } from "../utils/constants";
+import normalizeFileName from "../utils/file-name";
 import * as v from "valibot";
 
 const foldersController = express.Router();
@@ -136,6 +138,60 @@ foldersController.post("/", parseDto(CreateFolderDto), async (req, res) => {
       name: finalName,
       parentId: parentId ? Number(parentId) : undefined,
     })
+    .returning({
+      type: sql<string>`'folder'`,
+      id: foldersTable.id,
+      name: foldersTable.name,
+      createdAt: foldersTable.createdAt,
+    });
+
+  return res.json(folder[0]);
+});
+
+foldersController.put("/:id", parseDto(UpdateFolderDto), async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body as v.InferInput<typeof UpdateFolderDto>;
+
+  const currentFolder = await db
+    .select({
+      parentId: foldersTable.parentId,
+    })
+    .from(foldersTable)
+    .where(eq(foldersTable.id, Number(id)));
+
+  const normalizedFolderName = normalizeFileName(name);
+
+  const existingNames = await db
+    .select()
+    .from(foldersTable)
+    .where(
+      and(
+        not(eq(foldersTable.id, Number(id))),
+        eq(foldersTable.name, normalizedFolderName),
+        match(currentFolder[0].parentId)
+          .when(
+            (parentId) => parentId === undefined,
+            () => isNull(foldersTable.parentId),
+          )
+          .otherwise(() =>
+            eq(foldersTable.parentId, Number(currentFolder[0].parentId)),
+          ),
+      ),
+    );
+  if (existingNames.length > 0) {
+    return res.status(400).json({
+      nested: {
+        name: ["Tên thư mục này đã tồn tại"],
+      },
+    });
+  }
+
+  const folder = await db
+    .update(foldersTable)
+    .set({
+      name: normalizedFolderName,
+    })
+    .where(eq(foldersTable.id, Number(id)))
     .returning({
       type: sql<string>`'folder'`,
       id: foldersTable.id,

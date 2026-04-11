@@ -18,9 +18,10 @@ export default function ExplorerBreadcrumb() {
     <Breadcrumb
       listProps={{
         style: {
-          "--bs-breadcrumb-padding-x": 0,
-          "--bs-breadcrumb-padding-y": 0,
           "--bs-breadcrumb-margin-bottom": 0,
+          "--bs-breadcrumb-bg": "var(--bs-secondary-bg-subtle)",
+          "--bs-breadcrumb-item-active-color": "initial",
+          borderColor: "var(--bs-secondary-border-subtle)",
         } as CSSProperties,
       }}
     >

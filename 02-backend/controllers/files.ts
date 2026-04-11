@@ -13,19 +13,22 @@ import upload from "../utils/multer";
 import s3, { BUCKET } from "../utils/s3";
 import parseDto from "../middlewares/parse-dto";
 import UploadFileDto from "../dtos/upload-file";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, not, sql } from "drizzle-orm";
 import { DUPLICATE_AFFIX } from "../utils/constants";
 import * as v from "valibot";
 import { match } from "ts-pattern";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import UpdateFileDto from "../dtos/update-file";
 
 const filesController = express.Router();
 
 filesController.get("/:id", async (req, res) => {
   const { id } = req.params;
+  const { download } = req.query;
 
   const file = await db
     .select({
+      name: filesTable.name,
       bucketKey: filesTable.bucketKey,
     })
     .from(filesTable)
@@ -36,6 +39,10 @@ filesController.get("/:id", async (req, res) => {
     new GetObjectCommand({
       Bucket: BUCKET,
       Key: file[0].bucketKey,
+      ResponseContentDisposition:
+        download === "true"
+          ? `attachment;filename="${file[0].name}"`
+          : undefined,
     }),
     { expiresIn: 60 },
   );
@@ -111,6 +118,65 @@ filesController.post(
     return res.json(resultingFile[0]);
   },
 );
+
+filesController.put("/:id", parseDto(UpdateFileDto), async (req, res) => {
+  const { id } = req.params;
+  const { name: originalName } = req.body as v.InferInput<typeof UpdateFileDto>;
+  const fileName = path.parse(originalName);
+
+  const currentFile = await db
+    .select({
+      folderId: filesTable.folderId,
+    })
+    .from(filesTable)
+    .where(eq(filesTable.id, Number(id)));
+
+  const ext = fileName.ext.toLowerCase();
+  const normalizedFileName = normalizeFileName(fileName.name);
+
+  const existingNames = await db
+    .select()
+    .from(filesTable)
+    .where(
+      and(
+        not(eq(filesTable.id, Number(id))),
+        eq(filesTable.name, normalizedFileName + ext),
+        match(currentFile[0].folderId)
+          .when(
+            (folderId) => folderId === undefined,
+            () => isNull(filesTable.folderId),
+          )
+          .otherwise(() =>
+            eq(filesTable.folderId, Number(currentFile[0].folderId)),
+          ),
+      ),
+    );
+  if (existingNames.length > 0) {
+    return res.status(400).json({
+      nested: {
+        name: ["Tên tệp tin này đã tồn tại"],
+      },
+    });
+  }
+
+  const file = await db
+    .update(filesTable)
+    .set({
+      name: normalizedFileName + ext,
+    })
+    .where(eq(filesTable.id, Number(id)))
+    .returning({
+      type: sql<string>`'file'`,
+      id: filesTable.id,
+      name: filesTable.name,
+      mimeType: filesTable.mimeType,
+      sizeBytes: filesTable.sizeBytes,
+      bucketKey: filesTable.bucketKey,
+      createdAt: filesTable.createdAt,
+    });
+
+  return res.json(file[0]);
+});
 
 filesController.delete("/:id", async (req, res) => {
   const { id } = req.params;

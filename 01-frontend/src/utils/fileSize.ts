@@ -1,4 +1,7 @@
-const toFileSizeFormat = (sizeBytes: number, rounding: number = 2) => {
+export default function toFileSizeFormat(
+  sizeBytes: number,
+  rounding: number = 2,
+) {
   if (sizeBytes < 1_024) {
     return `${sizeBytes} B`;
   }
@@ -9,6 +12,4 @@ const toFileSizeFormat = (sizeBytes: number, rounding: number = 2) => {
       return `${newSize.toFixed(rounding)} ${units[i - 1]}`;
     }
   }
-};
-
-export default toFileSizeFormat;
+}

@@ -7,15 +7,21 @@ import RootFolderContext from "../contexts/RootFolderContext";
 import FileRow from "./FileRow";
 import FolderRow from "./FolderRow";
 import useSearchStore from "../stores/searchStore";
+import useTitleStore from "../stores/titleStore";
 
 export default function FileExplorer() {
   const rootFolderId = useContext(RootFolderContext);
   const query = useSearchStore((state) => state.query);
+  const setTitle = useTitleStore((state) => state.setTitle);
 
   const { data, isFetching } = useQuery({
     queryKey: ["folders", rootFolderId],
     queryFn: () => getContentsOfFolder(rootFolderId),
   });
+
+  if (data?.name) {
+    setTitle(data.name.replace(/^\/$/, "Home"));
+  }
 
   return (
     <div className="position-relative">
