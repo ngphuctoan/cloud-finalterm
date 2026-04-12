@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Container, Stack } from "react-bootstrap";
 import { useParams } from "react-router";
-import { BASE_URL, checkAuth } from "./actions";
+import { checkAuth } from "./actions";
 import AppHeader from "./components/AppHeader";
 import ExplorerBreadcrumb from "./components/ExplorerBreadcrumb";
 import FileExplorer from "./components/FileExplorer";
@@ -22,7 +22,7 @@ export default function App() {
 
   useEffect(() => {
     if (data?.isAuthenticated === false) {
-      window.location.href = `${BASE_URL}/auth/login?redirect_uri=${window.location.href}`;
+      window.location.href = `${import.meta.env.VITE_BACKEND_URL}/auth/login?redirect_uri=${window.location.href}`;
     }
   }, [data?.isAuthenticated]);
 

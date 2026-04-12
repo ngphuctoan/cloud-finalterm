@@ -11,17 +11,21 @@ import foldersController from "./controllers/folders";
 import checkAuth from "./middlewares/check-auth";
 
 const app = express();
+const port = 3000;
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: (origin, cb) =>
+      cb(null, JSON.parse(process.env.CORS_ALLOWED_ORIGINS!).includes(origin)),
     credentials: true,
   }),
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const redisClient = createClient();
+const redisClient = createClient({
+  url: process.env.SESSION_REDIS_URL!,
+});
 redisClient.connect().catch(console.error);
 
 const redisStore = new RedisStore({
@@ -44,7 +48,6 @@ app.use("/auth", authController);
 app.use("/folders", checkAuth, foldersController);
 app.use("/files", checkAuth, filesController);
 
-const PORT = 3000;
-app.listen(PORT, async () => {
-  console.log(`Example app listening on port ${PORT}`);
+app.listen(port, async () => {
+  console.log(`Backend running on "http://localhost:${port}"!`);
 });

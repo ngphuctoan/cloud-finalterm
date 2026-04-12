@@ -19,6 +19,7 @@ import * as v from "valibot";
 import { match } from "ts-pattern";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import UpdateFileDto from "../dtos/update-file";
+import { Readable } from "node:stream";
 
 const filesController = express.Router();
 
@@ -29,25 +30,42 @@ filesController.get("/:id", async (req, res) => {
   const file = await db
     .select({
       name: filesTable.name,
+      mimeType: filesTable.mimeType,
       bucketKey: filesTable.bucketKey,
     })
     .from(filesTable)
     .where(eq(filesTable.id, Number(id)));
 
-  const url = await getSignedUrl(
-    s3,
+  const obj = await s3.send(
     new GetObjectCommand({
       Bucket: BUCKET,
       Key: file[0].bucketKey,
-      ResponseContentDisposition:
-        download === "true"
-          ? `attachment;filename="${file[0].name}"`
-          : undefined,
     }),
-    { expiresIn: 60 },
   );
 
-  return res.json({ url });
+  res.setHeader("Content-Type", file[0].mimeType);
+  res.setHeader("Content-Length", obj.ContentLength!.toString());
+  res.setHeader(
+    "Content-Disposition",
+    download === "true" ? `attachment;filename="${file[0].name}"` : "inline",
+  );
+
+  return (obj.Body as Readable).pipe(res);
+
+  // const url = await getSignedUrl(
+  //   s3,
+  //   new GetObjectCommand({
+  //     Bucket: BUCKET,
+  //     Key: file[0].bucketKey,
+  //     ResponseContentDisposition:
+  //       download === "true"
+  //         ? `attachment;filename="${file[0].name}"`
+  //         : undefined,
+  //   }),
+  //   { expiresIn: 60 },
+  // );
+
+  // return res.json({ url });
 });
 
 filesController.post(

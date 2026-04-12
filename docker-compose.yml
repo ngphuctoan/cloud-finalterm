@@ -3,16 +3,67 @@ networks:
     driver: bridge
 
 services:
+  frontend:
+    build:
+      context: ./01-frontend
+      args:
+        - VITE_BACKEND_URL=${VITE_BACKEND_URL}
+    networks:
+      - keepbin-net
+    ports:
+      - 8080:80
+    environment:
+      - VITE_BACKEND_URL=http://localhost:8000/api
+    env_file:
+      - path: ./01-frontend/.env
+        required: false
+    volumes:
+      - ./01-frontend/nginx.conf:/etc/nginx/nginx.conf:ro,Z
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build: ./02-backend
+    networks:
+      - keepbin-net
+    ports:
+      - 3000:3000
+    environment:
+      - SESSION_SECRET=${BACKEND_SESSION_SECRET}
+      - SESSION_REDIS_URL=redis://session:6379
+
+      - CORS_ALLOWED_ORIGINS=["http://localhost:8000"]
+      - AUTH_ALLOWED_REDIRECTS=["http://localhost:8000"]
+
+      - DB_URL=postgres://postgres:${DB_PASS}@db:5432/postgres
+
+      - S3_URL=http://s3:8333
+      - S3_REGION=ap-southeast-1
+      - S3_ACCESS_KEY_ID=admin
+      - S3_ACCESS_KEY_SECRET=${S3_ACCESS_KEY_SECRET}
+
+      - OID_ISSUER_BASE_URL=http://auth:8080/realms/keepbin/.well-known/openid-configuration
+      - OID_CALLBACK_BASE_URL=http://localhost:3000
+      - OID_CLIENT_ID=backend
+      - OID_CLIENT_SECRET=${OID_CLIENT_SECRET}
+    env_file:
+      - path: ./02-backend/.env
+        required: false
+    depends_on:
+      - db
+      - auth
+      - s3
+    restart: unless-stopped
+
   db:
     image: postgres
     networks:
       - keepbin-net
-    ports:
-      - 5432:5432
     environment:
       - POSTGRES_PASSWORD=${DB_PASS}
     volumes:
-      - ./03-db/postgresql:/var/lib/postgresql:rw,Z
+      - db-data:/var/lib/postgresql
       - ./03-db/migrations:/docker-entrypoint-initdb.d:ro,Z
     restart: unless-stopped
 
@@ -25,14 +76,18 @@ services:
       - 8333:8333
     environment:
       - AWS_ACCESS_KEY_ID=admin
-      - AWS_SECRET_ACCESS_KEY=${S3_SECRET}
+      - AWS_SECRET_ACCESS_KEY=${S3_ACCESS_KEY_SECRET}
     volumes:
-      - ./05-s3/data:/data:rw,Z
+      - s3-data:/data:rw,Z
     restart: unless-stopped
 
   seaweedfs-admin:
     image: chrislusf/seaweedfs
-    command: admin -adminUser=admin -adminPassword=${SEAWEEDFS_ADMIN_PASS} -masters=s3:9333
+    command: |
+      admin
+        -adminUser=${SEAWEEDFS_ADMIN_USER} \
+        -adminPassword=${SEAWEEDFS_ADMIN_PASS}
+        -masters=s3:9333
     networks:
       - keepbin-net
     ports:
@@ -49,16 +104,37 @@ services:
     ports:
       - 8083:8080
     environment:
-      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
-      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_PASS}
+      - KC_BOOTSTRAP_ADMIN_USERNAME=${KC_ADMIN_USER}
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_ADMIN_PASS}
+      - KC_HOSTNAME=http://localhost:8000/auth
+      - KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true
     volumes:
-      - ./04-auth/keycloak:/opt/keycloak/data/h2:rw,Z
+      - auth-data:/opt/keycloak/data/h2:rw,Z
     restart: unless-stopped
 
   session:
     image: valkey/valkey
     networks:
       - keepbin-net
-    ports:
-      - 6379:6379
     restart: unless-stopped
+
+  proxy:
+    image: nginx
+    entrypoint: ["/entrypoint.sh"]
+    networks:
+      - keepbin-net
+    ports:
+      - 8000:80
+    volumes:
+      - ./10-proxy/template.conf:/etc/nginx/template.conf:ro,Z
+      - ./10-proxy/entrypoint.sh:/entrypoint.sh:ro,Z
+    depends_on:
+      - frontend
+      - backend
+      - auth
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  s3-data:
+  auth-data:

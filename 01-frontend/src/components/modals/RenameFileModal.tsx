@@ -35,7 +35,7 @@ export default function RenameFileModal({
               name="name"
               autoFocus
               defaultValue={file.name}
-              isInvalid={errors?.name?.length > 0}
+              isInvalid={(errors?.name?.length ?? 0) > 0}
             />
             <Form.Control.Feedback type="invalid">
               {errors?.name?.[0]}

@@ -2,11 +2,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Dropdown } from "react-bootstrap";
 import { FaDownload, FaEdit, FaEllipsisV, FaTrashAlt } from "react-icons/fa";
-import { deleteFile, getFileUrl, updateFile } from "../actions";
+import { deleteFile, updateFile } from "../actions";
 import type { ExplorerEntry } from "../types";
+import getFileUrl from "../utils/getFileUrl";
+import type { FetchError } from "../utils/parseError";
 import DeleteFileModal from "./modals/DeleteFileModal";
 import RenameFileModal from "./modals/RenameFileModal";
-import type { FetchError } from "../utils/parseError";
 
 export default function FileActions({ file }: { file: ExplorerEntry<"file"> }) {
   const [showDeleteFileModal, setShowDeleteFileModal] =
@@ -43,13 +44,6 @@ export default function FileActions({ file }: { file: ExplorerEntry<"file"> }) {
     },
   });
 
-  const downloadFileMutation = useMutation({
-    mutationFn: (id: number) =>
-      getFileUrl(id, true).then((data) => {
-        window.location.href = data.url;
-      }),
-  });
-
   return (
     <>
       <Dropdown>
@@ -60,7 +54,7 @@ export default function FileActions({ file }: { file: ExplorerEntry<"file"> }) {
           <FaEllipsisV className="m-1" />
         </Dropdown.Toggle>
         <Dropdown.Menu>
-          <Dropdown.Item onClick={() => downloadFileMutation.mutate(file.id)}>
+          <Dropdown.Item href={getFileUrl(file.id, true)}>
             <FaDownload /> Tải về
           </Dropdown.Item>
           <Dropdown.Item onClick={() => setShowRenameFileModal(true)}>

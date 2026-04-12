@@ -12,10 +12,10 @@ import validRedirect from "../middlewares/valid-redirect";
 const authController = express.Router();
 
 const config = await client.discovery(
-  new URL(process.env.ISSUER_BASE_URL!),
-  process.env.CLIENT_ID!,
-  process.env.SECRET!,
-  client.ClientSecretPost(process.env.SECRET!),
+  new URL(process.env.OID_ISSUER_BASE_URL!),
+  process.env.OID_CLIENT_ID!,
+  process.env.OID_CLIENT_SECRET!,
+  client.ClientSecretPost(process.env.OID_CLIENT_SECRET!),
   {
     execute: [client.allowInsecureRequests],
   },
@@ -24,7 +24,7 @@ const config = await client.discovery(
 const options: StrategyOptions = {
   config,
   scope: "openid email",
-  callbackURL: `${process.env.BASE_URL}/auth/login`,
+  callbackURL: `${process.env.OID_CALLBACK_BASE_URL!}/auth/login`,
 };
 
 const verify: VerifyFunction = (tokens, verified) => {
@@ -68,13 +68,13 @@ authController.get(
   (req, res, next) =>
     ensureLoggedOut(
       (req as any).session.validRedirectUri ||
-        `${req.protocol}://${req.host}/auth/check`,
+        `${process.env.OID_CALLBACK_BASE_URL!}/auth/check`,
     )(req, res, next),
   (req, res, next) =>
     passport.authenticate("openid", {
       successRedirect:
         (req as any).session.validRedirectUri ||
-        `${req.protocol}://${req.host}/auth/check`,
+        `${process.env.OID_CALLBACK_BASE_URL!}/auth/check`,
     })(req, res, next),
 );
 
@@ -85,7 +85,7 @@ authController.get("/logout", validRedirect, (req, res) => {
     const logoutUrl = client.buildEndSessionUrl(config, {
       id_token_hint: id_token,
       post_logout_redirect_uri:
-        validRedirectUri || `${req.protocol}://${req.host}/auth/check`,
+        validRedirectUri || `${process.env.OID_CALLBACK_BASE_URL!}/auth/check`,
     }).href;
     res.json({ url: logoutUrl });
   });

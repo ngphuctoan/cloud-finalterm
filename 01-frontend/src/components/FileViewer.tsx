@@ -1,18 +1,11 @@
 import { Modal, Stack } from "react-bootstrap";
 import useFileViewerStore from "../stores/fileViewerStore";
-import { useQuery } from "@tanstack/react-query";
-import { getFileUrl } from "../actions";
 import FilePreview from "./FilePreview";
+import getFileUrl from "../utils/getFileUrl";
 
 export default function FileViewer() {
   const file = useFileViewerStore((state) => state.file);
   const setFileViewerFile = useFileViewerStore((state) => state.setFile);
-
-  const { data } = useQuery({
-    queryKey: ["files", file?.id],
-    queryFn: () => getFileUrl(file.id),
-    enabled: file !== null,
-  });
 
   const onHide = () => setFileViewerFile(null);
 
@@ -23,9 +16,9 @@ export default function FileViewer() {
       </Modal.Header>
       <Modal.Body>
         <Stack className="align-items-center">
-          {data?.url && file && (
+          {file && (
             <FilePreview
-              url={data.url}
+              url={getFileUrl(file.id)}
               mimeType={file.mimeType}
               ext={file.name.split(".").pop()}
             />

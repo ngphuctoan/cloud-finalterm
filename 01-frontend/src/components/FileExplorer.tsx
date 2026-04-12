@@ -9,6 +9,7 @@ import FolderRow from "./FolderRow";
 import useSearchStore from "../stores/searchStore";
 import useTitleStore from "../stores/titleStore";
 import { FaFolderOpen } from "react-icons/fa";
+import type { ExplorerEntry } from "../types";
 
 export default function FileExplorer() {
   const rootFolderId = useContext(RootFolderContext);
@@ -17,7 +18,7 @@ export default function FileExplorer() {
 
   const { data, isFetching } = useQuery({
     queryKey: ["folders", rootFolderId],
-    queryFn: () => getContentsOfFolder(rootFolderId),
+    queryFn: () => getContentsOfFolder(rootFolderId ?? undefined),
   });
 
   if (data?.name) {
@@ -44,9 +45,14 @@ export default function FileExplorer() {
         <tbody>
           {match(data?.contents)
             .when(
-              (contents) => contents?.length > 0,
+              (contents) => (contents?.length ?? 0) > 0,
               (contents) =>
-                contents
+                (
+                  contents as (
+                    | ExplorerEntry<"file">
+                    | ExplorerEntry<"folder">
+                  )[]
+                )
                   .filter((entry) => entry.name.toLowerCase().includes(query))
                   .map((entry, i) =>
                     match(entry)

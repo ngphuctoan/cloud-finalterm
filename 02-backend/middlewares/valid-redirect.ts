@@ -8,9 +8,9 @@ const validRedirect = (req: Request, res: Response, next: NextFunction) => {
   }
 
   if (
-    process.env
-      .ALLOWED_REDIRECTS!.split(",")
-      .includes(new URL(redirect_uri as string).origin)
+    JSON.parse(process.env.AUTH_ALLOWED_REDIRECTS!).includes(
+      new URL(redirect_uri as string).origin,
+    )
   ) {
     (req as any).session.validRedirectUri = redirect_uri;
     return next();

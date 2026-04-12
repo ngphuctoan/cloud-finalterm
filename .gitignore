@@ -1,6 +1,2 @@
-.env
-**/node_modules
-02-backend/drizzle
-03-db/postgresql
-04-auth/keycloak
-05-s3/data
+**/.env*
+!**/.env.example

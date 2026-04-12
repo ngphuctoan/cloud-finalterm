@@ -40,7 +40,7 @@ export default function CreateFolderModal({
             <Form.Control
               name="name"
               autoFocus
-              isInvalid={errors?.name?.length > 0}
+              isInvalid={(errors?.name?.length ?? 0) > 0}
             />
             <Form.Control.Feedback type="invalid">
               {errors?.name?.[0]}

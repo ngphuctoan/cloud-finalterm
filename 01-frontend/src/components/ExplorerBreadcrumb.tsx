@@ -11,7 +11,7 @@ export default function ExplorerBreadcrumb() {
 
   const { data } = useQuery({
     queryKey: ["folders", "breadcrumb", rootFolderId],
-    queryFn: () => getFolderBreadcrumb(rootFolderId),
+    queryFn: () => getFolderBreadcrumb(rootFolderId ?? undefined),
   });
 
   return (
@@ -34,7 +34,7 @@ export default function ExplorerBreadcrumb() {
           key={i}
           linkAs={Link}
           linkProps={{ to: `/folders/${breadcrumb.id}` }}
-          active={rootFolderId === breadcrumb.id}
+          active={rootFolderId === (breadcrumb.id as unknown as number)}
         >
           {breadcrumb.name}
         </Breadcrumb.Item>

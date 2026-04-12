@@ -1,26 +1,27 @@
 import type { Auth, ExplorerEntry, ExplorerEntryType } from "./types";
 import errorCheck from "./utils/errorCheck";
 
-export const BASE_URL = "http://localhost:3000";
-
 export const checkAuth = () =>
-  fetch(`${BASE_URL}/auth/check`, {
+  fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/check`, {
     credentials: "include",
   })
     .then(errorCheck)
     .then((data) => data as Auth);
 
 export const logout = (redirect_uri: string) =>
-  fetch(`${BASE_URL}/auth/logout?redirect_uri=${redirect_uri}`, {
-    credentials: "include",
-  })
+  fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/auth/logout?redirect_uri=${redirect_uri}`,
+    {
+      credentials: "include",
+    },
+  )
     .then(errorCheck)
     .then((data) => data as { url: string });
 
 export const getContentsOfFolder = <T extends ExplorerEntryType>(
   rootFolderId?: number,
 ) =>
-  fetch(`${BASE_URL}/folders/${rootFolderId || ""}`, {
+  fetch(`${import.meta.env.VITE_BACKEND_URL}/folders/${rootFolderId || ""}`, {
     credentials: "include",
   })
     .then(errorCheck)
@@ -35,15 +36,18 @@ export const getFolderBreadcrumb = (rootFolderId?: number) => {
   if (!rootFolderId) {
     return [];
   }
-  return fetch(`${BASE_URL}/folders/${rootFolderId}/breadcrumb`, {
-    credentials: "include",
-  })
+  return fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/folders/${rootFolderId}/breadcrumb`,
+    {
+      credentials: "include",
+    },
+  )
     .then(errorCheck)
     .then((data) => data as { id: string; name: string }[]);
 };
 
 export const createFolder = (data: FormData) =>
-  fetch(`${BASE_URL}/folders`, {
+  fetch(`${import.meta.env.VITE_BACKEND_URL}/folders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -58,7 +62,7 @@ export const createFolder = (data: FormData) =>
     .then((data) => data as ExplorerEntry<"folder">);
 
 export const deleteFolder = (id: number) =>
-  fetch(`${BASE_URL}/folders/${id}`, {
+  fetch(`${import.meta.env.VITE_BACKEND_URL}/folders/${id}`, {
     method: "DELETE",
     credentials: "include",
   })
@@ -66,7 +70,7 @@ export const deleteFolder = (id: number) =>
     .then((data) => data as ExplorerEntry<"folder">);
 
 export const updateFolder = (id: number, data: FormData) =>
-  fetch(`${BASE_URL}/folders/${id}`, {
+  fetch(`${import.meta.env.VITE_BACKEND_URL}/folders/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -80,7 +84,7 @@ export const updateFolder = (id: number, data: FormData) =>
     .then((data) => data as ExplorerEntry<"folder">);
 
 export const uploadFile = (data: FormData) =>
-  fetch(`${BASE_URL}/files`, {
+  fetch(`${import.meta.env.VITE_BACKEND_URL}/files`, {
     method: "POST",
     body: data,
     credentials: "include",
@@ -89,7 +93,7 @@ export const uploadFile = (data: FormData) =>
     .then((data) => data as ExplorerEntry<"file">);
 
 export const deleteFile = (id: number) =>
-  fetch(`${BASE_URL}/files/${id}`, {
+  fetch(`${import.meta.env.VITE_BACKEND_URL}/files/${id}`, {
     method: "DELETE",
     credentials: "include",
   })
@@ -97,7 +101,7 @@ export const deleteFile = (id: number) =>
     .then((data) => data as ExplorerEntry<"file">);
 
 export const updateFile = (id: number, data: FormData) =>
-  fetch(`${BASE_URL}/files/${id}`, {
+  fetch(`${import.meta.env.VITE_BACKEND_URL}/files/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -109,10 +113,3 @@ export const updateFile = (id: number, data: FormData) =>
   })
     .then(errorCheck)
     .then((data) => data as ExplorerEntry<"file">);
-
-export const getFileUrl = (id: number, download: boolean = false) =>
-  fetch(`${BASE_URL}/files/${id}?download=${download.toString()}`, {
-    credentials: "include",
-  })
-    .then(errorCheck)
-    .then((data) => data as { url: string });
