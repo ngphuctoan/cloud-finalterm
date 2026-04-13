@@ -1,54 +1,58 @@
 networks:
   keepbin-net:
-    driver: bridge
+    name: keepbin-net
 
 services:
   frontend:
     build:
-      context: ./01-frontend
+      context: ./frontend
       args:
         - VITE_BACKEND_URL=${VITE_BACKEND_URL}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=Host(`docker.localhost`)||Host(`www.docker.localhost`)
+      - traefik.http.routers.frontend.entrypoints=websecure
+      - traefik.http.routers.frontend.tls=true
+      # - traefik.http.routers.frontend.tls.certresolver=le
     networks:
       - keepbin-net
-    ports:
-      - 8080:80
     environment:
-      - VITE_BACKEND_URL=http://localhost:8000/api
+      - VITE_BACKEND_URL=https://api.docker.localhost
     env_file:
-      - path: ./01-frontend/.env
+      - path: ./frontend/.env
         required: false
     volumes:
-      - ./01-frontend/nginx.conf:/etc/nginx/nginx.conf:ro,Z
+      - ./frontend/nginx.conf:/etc/nginx/nginx.conf:ro,Z
     depends_on:
       - backend
     restart: unless-stopped
 
   backend:
-    build: ./02-backend
+    build: ./backend
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.backend.rule=Host(`api.docker.localhost`)
+      - traefik.http.routers.backend.entrypoints=websecure
+      - traefik.http.routers.backend.tls=true
+      # - traefik.http.routers.backend.tls.certresolver=le
     networks:
       - keepbin-net
-    ports:
-      - 3000:3000
     environment:
       - SESSION_SECRET=${BACKEND_SESSION_SECRET}
       - SESSION_REDIS_URL=redis://session:6379
-
-      - CORS_ALLOWED_ORIGINS=["http://localhost:8000"]
-      - AUTH_ALLOWED_REDIRECTS=["http://localhost:8000"]
-
+      - CORS_ALLOWED_ORIGINS=["https://docker.localhost"]
+      - AUTH_ALLOWED_REDIRECTS=["https://docker.localhost"]
       - DB_URL=postgres://postgres:${DB_PASS}@db:5432/postgres
-
       - S3_URL=http://s3:8333
       - S3_REGION=ap-southeast-1
       - S3_ACCESS_KEY_ID=admin
       - S3_ACCESS_KEY_SECRET=${S3_ACCESS_KEY_SECRET}
-
       - OID_ISSUER_BASE_URL=http://auth:8080/realms/keepbin/.well-known/openid-configuration
-      - OID_CALLBACK_BASE_URL=http://localhost:3000
+      - OID_CALLBACK_BASE_URL=https://api.docker.localhost
       - OID_CLIENT_ID=backend
       - OID_CLIENT_SECRET=${OID_CLIENT_SECRET}
     env_file:
-      - path: ./02-backend/.env
+      - path: ./backend/.env
         required: false
     depends_on:
       - db
@@ -64,7 +68,7 @@ services:
       - POSTGRES_PASSWORD=${DB_PASS}
     volumes:
       - db-data:/var/lib/postgresql
-      - ./03-db/migrations:/docker-entrypoint-initdb.d:ro,Z
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro,Z
     restart: unless-stopped
 
   s3:
@@ -72,8 +76,6 @@ services:
     command: server -dir=/data -s3
     networks:
       - keepbin-net
-    ports:
-      - 8333:8333
     environment:
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=${S3_ACCESS_KEY_SECRET}
@@ -99,14 +101,18 @@ services:
   auth:
     image: quay.io/keycloak/keycloak
     command: start-dev
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.auth.rule=Host(`auth.docker.localhost`)
+      - traefik.http.routers.auth.entrypoints=websecure
+      - traefik.http.routers.auth.tls=true
+      # - traefik.http.routers.auth.tls.certresolver=le
     networks:
       - keepbin-net
-    ports:
-      - 8083:8080
     environment:
       - KC_BOOTSTRAP_ADMIN_USERNAME=${KC_ADMIN_USER}
       - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_ADMIN_PASS}
-      - KC_HOSTNAME=http://localhost:8000/auth
+      - KC_HOSTNAME=https://auth.docker.localhost
       - KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true
     volumes:
       - auth-data:/opt/keycloak/data/h2:rw,Z
@@ -119,20 +125,42 @@ services:
     restart: unless-stopped
 
   proxy:
-    image: nginx
-    entrypoint: ["/entrypoint.sh"]
+    image: traefik:v3.6
+    command:
+      - --api.insecure=false
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=keepbin-net
+      - --entrypoints.web.address=:80
+      - --entryPoints.websecure.address=:443
+      - --entryPoints.websecure.http.tls=true
+      - --providers.file.directory=/dynamic
+      # - --entryPoints.web.http.redirections.entryPoint.to=websecure
+      # - --entryPoints.web.http.redirections.entryPoint.scheme=https
+      # - --certificatesresolvers.le.acme.email=${LE_EMAIL}
+      # - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      # - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dashboard.rule=Host(`dashboard.docker.localhost`)
+      - traefik.http.routers.dashboard.entrypoints=websecure
+      - traefik.http.routers.dashboard.service=api@internal
+      - traefik.http.routers.dashboard.tls=true
+    security_opt:
+      - label=disable
+      - no-new-privileges=true
     networks:
       - keepbin-net
     ports:
-      - 8000:80
+      - 80:80
+      - 443:443
+      - 8080:8080
     volumes:
-      - ./10-proxy/template.conf:/etc/nginx/template.conf:ro,Z
-      - ./10-proxy/entrypoint.sh:/entrypoint.sh:ro,Z
-    depends_on:
-      - frontend
-      - backend
-      - auth
-    restart: unless-stopped
+      - ./proxy/certs:/certs:ro
+      - ./proxy/dynamic:/dynamic:ro
+      - ./proxy/letsencrypt:/letsencrypt
+      - ${DOCKER_SOCKET}:/var/run/docker.sock:ro
 
 volumes:
   db-data:
