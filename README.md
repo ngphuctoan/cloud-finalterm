@@ -1,7 +1,9 @@
 <h1 align="center">
-  <img src="assets/icon-192.png" width="96" height="96" />
+  <img src="assets/icon-192.png" width="64" height="64" />
   <br />
   KeepBin
 </h1>
 
-_Work in progress!_
+<p align="center">
+  :construction: Work in progress!
+</p>
