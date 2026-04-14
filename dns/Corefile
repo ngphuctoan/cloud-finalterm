@@ -1,0 +1,5 @@
+docker.localhost {
+  file /zones/docker.localhost.db
+  log
+  errors
+}
