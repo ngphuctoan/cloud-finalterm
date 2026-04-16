@@ -14,7 +14,7 @@ services:
         - VITE_BACKEND_URL=${VITE_BACKEND_URL}
     labels:
       - traefik.enable=true
-      - traefik.http.routers.frontend.rule=Host(`docker.localhost`)||Host(`www.docker.localhost`)
+      - traefik.http.routers.frontend.rule=Host(`${PROXY_DOMAIN}`)||Host(`www.${PROXY_DOMAIN}`)
       - traefik.http.routers.frontend.entrypoints=websecure
       - traefik.http.routers.frontend.tls=true
       # - traefik.http.routers.frontend.tls.certresolver=le
@@ -23,7 +23,7 @@ services:
     dns:
       - 10.0.10.20
     environment:
-      - VITE_BACKEND_URL=https://api.docker.localhost
+      - VITE_BACKEND_URL=https://api.${PROXY_DOMAIN}
     env_file:
       - path: ./frontend/.env
         required: false
@@ -31,11 +31,19 @@ services:
       - ./frontend/nginx.conf:/etc/nginx/nginx.conf:ro,Z
     restart: unless-stopped
 
+  frontend-metrics:
+    image: nginx/nginx-prometheus-exporter
+    networks:
+      - keepbin-net
+    environments:
+      - NGINX_SCRAPE_URI=http://frontend/stub_status
+    restart: unless-stopped
+
   backend:
     build: ./backend
     labels:
       - traefik.enable=true
-      - traefik.http.routers.backend.rule=Host(`api.docker.localhost`)
+      - traefik.http.routers.backend.rule=Host(`api.${PROXY_DOMAIN}`)
       - traefik.http.routers.backend.entrypoints=websecure
       - traefik.http.routers.backend.tls=true
       # - traefik.http.routers.backend.tls.certresolver=le
@@ -46,15 +54,15 @@ services:
     environment:
       - SESSION_SECRET=${BACKEND_SESSION_SECRET}
       - SESSION_REDIS_URL=redis://session:6379
-      - CORS_ALLOWED_ORIGINS=["https://docker.localhost"]
-      - AUTH_ALLOWED_REDIRECTS=["https://docker.localhost"]
+      - CORS_ALLOWED_ORIGINS=["https://${PROXY_DOMAIN}"]
+      - AUTH_ALLOWED_REDIRECTS=["https://${PROXY_DOMAIN}"]
       - DB_URL=postgres://postgres:${DB_PASS}@db:5432/postgres
       - S3_URL=http://s3:8333
       - S3_REGION=ap-southeast-1
       - S3_ACCESS_KEY_ID=admin
       - S3_ACCESS_KEY_SECRET=${S3_ACCESS_KEY_SECRET}
       - OID_ISSUER_BASE_URL=http://auth:8080/realms/keepbin/.well-known/openid-configuration
-      - OID_CALLBACK_BASE_URL=https://api.docker.localhost
+      - OID_CALLBACK_BASE_URL=https://api.${PROXY_DOMAIN}
       - OID_CLIENT_ID=backend
       - OID_CLIENT_SECRET=${OID_CLIENT_SECRET}
     env_file:
@@ -69,13 +77,23 @@ services:
     environment:
       - POSTGRES_PASSWORD=${DB_PASS}
     volumes:
-      - db-data:/var/lib/postgresql
+      - db-data:/var/lib/postgresql:rw,Z
       - ./db/migrations:/docker-entrypoint-initdb.d:ro,Z
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter
+    networks:
+      - keepbin-net
+    environment:
+      - DATA_SOURCE_URI=db:5432/postgres?sslmode=disable
+      - DATA_SOURCE_USER=postgres
+      - DATA_SOURCE_PASS=${DB_PASS}
     restart: unless-stopped
 
   s3:
     image: chrislusf/seaweedfs
-    command: server -dir=/data -s3
+    command: server -dir=/data -s3 -metricsPort=1234
     networks:
       - keepbin-net
     environment:
@@ -83,6 +101,14 @@ services:
       - AWS_SECRET_ACCESS_KEY=${S3_ACCESS_KEY_SECRET}
     volumes:
       - s3-data:/data:rw,Z
+    restart: unless-stopped
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+    networks:
+      - keepbin-net
+    environment:
+      - REDIS_ADDR=redis://session:6379
     restart: unless-stopped
 
   seaweedfs-admin:
@@ -103,7 +129,7 @@ services:
     command: start-dev
     labels:
       - traefik.enable=true
-      - traefik.http.routers.auth.rule=Host(`auth.docker.localhost`)
+      - traefik.http.routers.auth.rule=Host(`auth.${PROXY_DOMAIN}`)
       - traefik.http.routers.auth.entrypoints=websecure
       - traefik.http.routers.auth.tls=true
       # - traefik.http.routers.auth.tls.certresolver=le
@@ -114,8 +140,10 @@ services:
     environment:
       - KC_BOOTSTRAP_ADMIN_USERNAME=${KC_ADMIN_USER}
       - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_ADMIN_PASS}
-      - KC_HOSTNAME=https://auth.docker.localhost
+      - KC_HOSTNAME=https://auth.${PROXY_DOMAIN}
       - KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true
+      - KC_HEALTH_ENABLED=true
+      - KC_METRICS_ENABLED=true
     volumes:
       - auth-data:/opt/keycloak/data/h2:rw,Z
     restart: unless-stopped
@@ -137,6 +165,41 @@ services:
     volumes:
       - ./dns/zones:/zones:ro,Z
       - ./dns/Corefile:/Corefile:ro,Z
+    restart: unless-stopped
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter
+    networks:
+      - keepbin-net
+    restart: unless-stopped
+
+  prom:
+    image: quay.io/prometheus/prometheus
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.prom.rule=Host(`prom.${PROXY_DOMAIN}`)
+      - traefik.http.routers.prom.entrypoints=websecure
+      - traefik.http.routers.prom.tls=true
+      # - traefik.http.routers.prom.tls.certresolver=le
+    networks:
+      - keepbin-net
+    volumes:
+      - ./prom/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.grafana.rule=Host(`grafana.${PROXY_DOMAIN}`)
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.routers.grafana.tls=true
+      # - traefik.http.routers.grafana.tls.certresolver=le
+    networks:
+      - keepbin-net
+    volumes:
+      - grafana-data:/var/lib/grafana:rw,Z
+    restart: unless-stopped
 
   proxy:
     image: traefik:v3.6
@@ -155,9 +218,10 @@ services:
       # - --certificatesresolvers.le.acme.email=${LE_EMAIL}
       # - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
       # - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+      - --metrics.prometheus=true
     labels:
       - traefik.enable=true
-      - traefik.http.routers.dashboard.rule=Host(`dashboard.docker.localhost`)
+      - traefik.http.routers.dashboard.rule=Host(`dashboard.${PROXY_DOMAIN}`)
       - traefik.http.routers.dashboard.entrypoints=websecure
       - traefik.http.routers.dashboard.service=api@internal
       - traefik.http.routers.dashboard.tls=true
@@ -174,10 +238,12 @@ services:
     volumes:
       - ./proxy/certs:/certs:ro
       - ./proxy/dynamic:/dynamic:ro
-      - ./proxy/letsencrypt:/letsencrypt
+      - ./proxy/letsencrypt:/letsencrypt:rw
       - ${DOCKER_SOCKET}:/var/run/docker.sock:ro
+    restart: unless-stopped
 
 volumes:
-  db-data:
-  s3-data:
-  auth-data:
+  db-data: {}
+  s3-data: {}
+  auth-data: {}
+  grafana-data: {}

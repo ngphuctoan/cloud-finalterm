@@ -9,6 +9,7 @@ import authController from "./controllers/auth";
 import filesController from "./controllers/files";
 import foldersController from "./controllers/folders";
 import checkAuth from "./middlewares/check-auth";
+import metricsController from "./controllers/metrics";
 
 const app = express();
 const port = 3000;
@@ -44,6 +45,7 @@ app.use(
 );
 app.use(passport.authenticate("session"));
 
+app.use("/metrics", metricsController);
 app.use("/auth", authController);
 app.use("/folders", checkAuth, foldersController);
 app.use("/files", checkAuth, filesController);

@@ -1,3 +1,7 @@
+. {
+  prometheus :9153
+}
+
 docker.localhost {
   file /zones/docker.localhost.db
   log
