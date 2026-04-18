@@ -21,10 +21,14 @@ export default function App() {
   });
 
   useEffect(() => {
-    if (data?.isAuthenticated === false) {
+    if (
+      data?.isAuthenticated === false &&
+      sessionStorage.getItem("tryLoggedInOnce") !== "yes"
+    ) {
       window.location.href = `${import.meta.env.VITE_BACKEND_URL}/auth/login?redirect_uri=${window.location.href}`;
+      sessionStorage.setItem("tryLoggedInOnce", "yes");
     }
-  }, [data?.isAuthenticated]);
+  }, [data?.isAuthenticated, sessionStorage.getItem("tryLoggedInOnce")]);
 
   return (
     <UserContext.Provider value={data?.user || null}>

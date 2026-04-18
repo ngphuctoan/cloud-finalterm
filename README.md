@@ -15,7 +15,7 @@
 | --- | --- | --- |
 | `LE_EMAIL` | Email để kiểm thử Let's Encrypt. **Hiện tại ứng dụng sử dụng chứng chỉ tự cấp nên dòng này không có tác dụng.** | `<địa chỉ>@<tên miền>.<tld>` |
 | `DOCKER_SOCKET` | Đường dẫn chỉ tới socket. Nếu sử dụng Docker đặt là `/var/run/docker.sock`. | `/var/run/docker.sock` |
-| `PROXY_DOMAIN` | Tên miền cho Traefik reverse-proxy (không kèm protocol v.d. `https://`). Nếu chạy local đặt là `localhost`. | `<tên miền>.<tld>`
+| `PROXY_DOMAIN` | Tên miền cho Traefik reverse-proxy (không kèm protocol v.d. `https://`). Nếu chạy local đặt là `docker.localhost`. | `<tên miền>.<tld>`
 | `DB_PASS` | Mật khẩu cho CSDL PostgreSQL (nên sử dụng mật khẩu mạnh). | &mdash; |
 | `BACKEND_SESSION_SECRET` | Mật khẩu để backend lưu trữ session (nên sử dụng mật khẩu mạnh). | &mdash; |
 | `OID_CLIENT_SECRET` | Mật khẩu của Keycloak client (có thể tự đặt rồi sửa lại, hoặc sao chép trong Keycloak Admin UI). | &mdash; |
@@ -52,7 +52,7 @@ EOF
 docker compose up -d
 ```
 
-5. Truy cập Keycloak Admin UI tại đường dẫn `https://auth.<tên miền>` (v.d. `https://auth.localhost`) và đăng nhập:
+5. Truy cập Keycloak Admin UI tại đường dẫn `https://auth.<tên miền>` (v.d. `https://auth.docker.localhost`) và đăng nhập:
 
 ![Trang đăng nhập của Keycloak Admin UI](assets/docs/keycloak-admin-ui-login.png)
 

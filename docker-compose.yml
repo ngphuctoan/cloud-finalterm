@@ -11,7 +11,7 @@ services:
     build:
       context: ./frontend
       args:
-        - VITE_BACKEND_URL=${VITE_BACKEND_URL}
+        - VITE_BACKEND_URL=https://api.${PROXY_DOMAIN}
     image: ngphuctoan/keepbin-frontend:dev
     labels:
       - traefik.enable=true
