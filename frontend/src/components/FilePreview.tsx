@@ -19,7 +19,10 @@ export default function FilePreview({
 
   const { data } = useQuery({
     queryKey: [url],
-    queryFn: () => fetch(url).then((res) => res.text()),
+    queryFn: () =>
+      fetch(url, {
+        credentials: "include",
+      }).then((res) => res.text()),
     enabled: mimeType.startsWith("text"),
   });
 

@@ -13,6 +13,7 @@ export default function UserMenu() {
   const mutation = useMutation({
     mutationFn: logout,
     onSuccess: (data) => {
+      sessionStorage.setItem("tryLoggedInOnce", "no");
       queryClient.invalidateQueries({
         queryKey: ["auth"],
       });

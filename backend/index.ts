@@ -1,3 +1,5 @@
+import os from "node:os";
+import { execSync } from "node:child_process";
 import { RedisStore } from "connect-redis";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -44,6 +46,14 @@ app.use(
   }),
 );
 app.use(passport.authenticate("session"));
+
+app.get("/", (req, res) => {
+  return res.json({
+    status: "ok",
+    container: os.hostname(),
+    ip: execSync("hostname -i").toString().trim(),
+  });
+});
 
 app.use("/metrics", metricsController);
 app.use("/auth", authController);
